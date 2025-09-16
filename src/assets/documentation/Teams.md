@@ -1,8 +1,12 @@
+<script setup>
+defineProps(['country_adjective','country_name'])
+</script>
+
 # Teams
 
-The Swiss FEGA node is a consortium between multiple leading organisations in the Swiss research landscape, supported by [SERI](https://www.sbfi.admin.ch/sbfi/en/home.html) through the [SPHN](https://sphn.ch/) funding scheme and the [BioMedIT](https://www.biomedit.ch/) project.
+The {{country_adjective}} FEGA node is a consortium between multiple leading organisations in the {{country_adjective}} research landscape, supported by [SERI](https://www.sbfi.admin.ch/sbfi/en/home.html) through the [SPHN](https://sphn.ch/) funding scheme and the [BioMedIT](https://www.biomedit.ch/) project.
 
-We come together to participate in the [FEGA network](https://ega-archive.org/about/projects-and-funders/federated-ega/), and provide a safe location for Swiss research data.
+We come together to participate in the [FEGA network](https://ega-archive.org/about/projects-and-funders/federated-ega/), and provide a safe location for {{country_adjective}} research data.
 
 The leading house for the Swiss FEGA node is [SIB Swiss Institute of Bioinformatics](https://www.sib.swiss/) - which is a national non-profit organisation dedicated to biological and biomedical data science, and the [Swiss ELIXIR node](https://elixir-europe.org/about-us/who-we-are/nodes/switzerland). 
 

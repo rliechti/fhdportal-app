@@ -1,10 +1,10 @@
 <template>
   <v-sheet min-height="70vh" rounded="lg">
     <v-container class="maxWidth">
-      <h1 class="text-center mb-8">Welcome to the Swiss FEGA portal</h1>
+      <h1 class="text-center mb-8">Welcome to the {{country_adjective}} FEGA portal</h1>
       <br />
       <v-card>
-        <Home style="padding: 20px 40px" />
+        <Home style="padding: 20px 40px" :country_adjective="country_adjective" :country_name="country_name" />
       </v-card>
     </v-container>
   </v-sheet>
@@ -24,7 +24,10 @@ export default defineComponent({
       Home
   },
   data() {
-    return {}
+    return {
+      country_adjective: `${import.meta.env.VITE_FEGA_COUNTRY_ADJECTIVE}`,
+      country_name: `${import.meta.env.VITE_FEGA_COUNTRY_NAME}`
+    }
   }
 })
 </script>
