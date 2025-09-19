@@ -53,9 +53,9 @@ export const useSubmissionStore = defineStore('submissions', {
           .catch((err) => reject(err))
       })
     },
-    downloadCli() {
+    downloadCli(binaryName) {
       return new Promise((resolve, reject) => {
-        HTTP.get('/cli', { responseType: 'arraybuffer' })
+        HTTP.get(`/cli/${binaryName}`, { responseType: 'arraybuffer' })
           .then((res) => {
             resolve(res)
           })

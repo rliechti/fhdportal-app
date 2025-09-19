@@ -2,61 +2,85 @@
 
 A command-line interface tool for working with FHDportal submission bundles and metadata validation. FHDportal is a submission platform for the Federated European Genome-phenome Archive (FEGA), developed by the SIB Swiss Institute of Bioinformatics.
 
-## Installation
+## Binary Distribution
 
-### Prerequisites
+For easier deployment and usage, the FHDportal CLI available as pre-built binaries.
 
-- PHP 8.2 or higher
-- Composer 2.8 or higher
+### Download Binaries
 
-#### Installing Composer
+Download the appropriate binary for your platform using **Dowload CLI Tool** button at the top of the page.
 
-If Composer is not already installed on your system, follow the [official Composer installation guide](https://getcomposer.org/download/) to set it up globally.
+- **Linux (x64)**: `fega-linux`
+- **macOS (Intel)**: `fega-macos-x64`
+- **macOS (Apple Silicon)**: `fega-macos-arm`
+- **Windows (x64)**: `fega-windows.exe`
 
-After installation, verify Composer is available by running:
+
+### Installation
+
+1. **Make executable** (Linux/macOS):
 
 ```bash
-composer --version
+chmod +x fega-linux  # or fega-macos-arm
 ```
 
-### Setup
-
-<!-- 1. Clone the repository:
+2. **Rename for convenience** (optional):
 
 ```bash
-git clone <repository-url>
-cd fega-cli
-``` -->
+# Linux
+mv fega-linux fega
 
-1. Download and unzip the command line tool archive
+# macOS (choose the right one for your system)
+mv fega-macos-x64 fega    # Intel Mac
+mv fega-macos-arm fega    # Apple Silicon Mac
 
-```bash
-unzip fega-cli.zip
+# Windows
+mv fega-windows.exe fega.exe
 ```
 
-2. Install dependencies:
+3. **Add to PATH** (optional):
 
 ```bash
-composer install
+# Linux/macOS - move to /usr/local/bin or add directory to PATH
+sudo mv fega /usr/local/bin/
+
+# Windows - move to a directory in your PATH or add directory to PATH
 ```
 
-3. Make the console executable:
+4. **MacOS** security:
+
+   Recent version of macOS prevents the execution of this unsigned binary. To overcome this limitation, go to System Settings > Privacy & Security, then scroll down to find the app listed under "Security" and click "Open Anyway."
+
+### Usage with Binaries
+
+Once installed, use the binary just like the PHP version:
 
 ```bash
-chmod +x bin/console
+# Using renamed binary
+fega --help
+fega validate my-genomic-study/
+fega update
+fega template -o templates.zip
+
+# Using full binary name
+./fega-linux validate my-genomic-study/
+./fega-macos-x64 update        # Intel Mac
+./fega-macos-arm update        # Apple Silicon Mac
+./fega-windows.exe template -o templates.zip
 ```
 
 ## Usage
 
-The FHDportal CLI provides four main commands for working with FHDportal submission bundles:
+The FHDportal CLI provides five main commands for working with FHDportal submission bundles:
 
 ```bash
-bin/console <command> [options] [arguments]
+fega <command> [options] [arguments]
 ```
 
 ### Available Commands
 
 - [`update`](#update-command) - Update local JSON schemas
+- [`document`](#document-command) - Generate Markdown documentation for resource schemas
 - [`template`](#template-command) - Generate TSV file templates for metadata
 - [`bundle`](#bundle-command) - Generate a manifest file for a submission bundle
 - [`validate`](#validate-command) - Validate metadata files and submission bundles
@@ -70,7 +94,7 @@ This guide will walk you through creating your first submission bundle from star
 First, ensure you have the latest validation schemas:
 
 ```bash
-bin/console update -v
+fega update -v
 ```
 
 This downloads the current schema definitions from FHDportal and saves them to `config/schemas/`.
@@ -80,7 +104,7 @@ This downloads the current schema definitions from FHDportal and saves them to `
 Create template files to help structure your metadata:
 
 ```bash
-bin/console template -o my-genomic-study.zip -v
+fega template -o my-genomic-study.zip -v
 ```
 
 Extract the templates to your working directory:
@@ -107,39 +131,12 @@ title	description	type
 My Genomic Study	A comprehensive genomic analysis	Cancer Genomics
 ```
 
-#### Controlled vocabularies
-
-Several fields (columns) are associated with controlled vocabularies or with numeric values.
-
-You might want to explore the FEGA Metadata to get the assigned data types and list the available terms of the *enum* fields. 
-
-For example, the `type` column of a Study has the following allowed terms: 
-
-```tsv
-"Whole Genome Sequencing",
-"Metagenomics",
-"Transcriptome Analysis",
-"Resequencing",
-"Epigenetics",
-"Synthetic Genomics",
-"Forensic or Paleo-genomics",
-"Gene Regulation Study",
-"Cancer Genomics",
-"Population Genomics",
-"RNASeq",
-"Exome Sequencing",
-"Pooled Clone Sequencing",
-"Transcriptome Sequencing"
-````
-
-
-
 ### Step 4: Create a Submission Bundle
 
 Generate a manifest file and optionally create an archive:
 
 ```bash
-bin/console bundle -a -o my-genomic-study.zip -v .
+fega bundle -a -o my-genomic-study.zip -v .
 ```
 
 This creates:
@@ -152,7 +149,7 @@ This creates:
 Check that your submission bundle is valid:
 
 ```bash
-bin/console validate -v my-submission-bundle.zip
+fega validate -v my-submission-bundle.zip
 ```
 
 If validation passes, you'll see:
@@ -169,14 +166,14 @@ Here is the full sequence of commands:
 
 ```bash
 # 1. Update schemas
-bin/console update
+fega update
 
 # 2. Set up your project
 mkdir my-genomic-study
 cd my-genomic-study
 
 # 3. Generate templates
-bin/console template -o templates.zip
+fega template -o templates.zip
 unzip templates.zip
 rm templates.zip
 
@@ -184,10 +181,10 @@ rm templates.zip
 # (Populate the data programmatically or use your preferred spreadsheet application)
 
 # 5. Create the bundle
-.bin/console bundle -a -o my-genomic-study.zip .
+fega bundle -a -o my-genomic-study.zip .
 
 # 6. Validate before submission
-.bin/console validate my-genomic-study.zip
+fega validate my-genomic-study.zip
 ```
 
 ## Commands
@@ -199,7 +196,7 @@ Generate a manifest file for an FHDportal submission bundle.
 #### Syntax
 
 ```bash
-bin/console bundle [options] <directory-path>
+fega bundle [options] <directory-path>
 ```
 
 #### Arguments
@@ -232,31 +229,91 @@ The `bundle` command scans a directory containing metadata files and generates a
 **Basic usage:**
 
 ```bash
-bin/console bundle /path/to/submission/data
+fega bundle /path/to/submission/data
 ```
 
 **Create a bundle with archive:**
 
 ```bash
-bin/console bundle -a /path/to/submission/data
+fega bundle -a /path/to/submission/data
 ```
 
 **Specify custom archive name:**
 
 ```bash
-bin/console bundle -a -o my-submission.zip /path/to/submission/data
+fega bundle -a -o my-submission.zip /path/to/submission/data
 ```
 
 **Overwrite existing manifest:**
 
 ```bash
-bin/console bundle -w /path/to/submission/data
+fega bundle -w /path/to/submission/data
 ```
 
 **Verbose output:**
 
 ```bash
-bin/console bundle -v -a /path/to/submission/data
+fega bundle -v -a /path/to/submission/data
+```
+
+---
+
+### Document Command
+
+Generate documentation for resource schemas in Markdown or HTML format.
+
+#### Syntax
+
+```bash
+fega document [options]
+```
+
+#### Options
+
+- `-o, --output-file=OUTPUT-FILE` - Output file path for the documentation
+- `-f, --output-format=OUTPUT-FORMAT` - Output format: `md` or `html` (default: `md`)
+- `-v, --verbose` - Increase verbosity of messages
+- `-h, --help` - Display help for the command
+
+#### Description
+
+The `document` command generates comprehensive documentation for all available FHDportal resource schemas. This documentation includes detailed information about each resource type, including field descriptions, data types, constraints, and valid values.
+
+**Supported formats:**
+
+- **Markdown (`md`)** - Default format, suitable for documentation repositories and README files
+- **HTML (`html`)** - Web-ready format with professional styling, suitable for hosting and sharing
+
+#### Examples
+
+**Generate Markdown documentation with default filename:**
+
+```bash
+fega document
+```
+
+**Generate HTML documentation:**
+
+```bash
+fega document -f html
+```
+
+**Specify custom output file:**
+
+```bash
+fega document -o resource_schemas.md
+```
+
+**Generate HTML with custom filename:**
+
+```bash
+fega document -f html -o docs.html
+```
+
+**Verbose output:**
+
+```bash
+fega document -v
 ```
 
 ---
@@ -268,7 +325,7 @@ Generate TSV file templates for metadata submission.
 #### Syntax
 
 ```bash
-bin/console template [options]
+fega template [options]
 ```
 
 #### Options
@@ -288,19 +345,19 @@ The templates are created based on the table schemas retrieved from the local JS
 **Generate templates with default filename:**
 
 ```bash
-bin/console template
+fega template
 ```
 
 **Specify custom output file:**
 
 ```bash
-bin/console template -o my-templates.zip
+fega template -o my-templates.zip
 ```
 
 **Verbose output:**
 
 ```bash
-bin/console template -v
+fega template -v
 ```
 
 ---
@@ -312,7 +369,7 @@ Update the local JSON schemas.
 #### Syntax
 
 ```bash
-bin/console update [options]
+fega update [options]
 ```
 
 #### Options
@@ -336,13 +393,13 @@ The command performs the following operations:
 **Update schemas:**
 
 ```bash
-bin/console update
+fega update
 ```
 
 **Update with verbose output:**
 
 ```bash
-bin/console update -v
+fega update -v
 ```
 
 ---
@@ -354,7 +411,7 @@ Validate metadata files and submission bundles.
 #### Syntax
 
 ```bash
-bin/console validate [options] <target-path>
+fega validate [options] <target-path>
 ```
 
 #### Arguments
@@ -392,31 +449,31 @@ The `validate` command performs comprehensive validation of FHDportal metadata f
 **Validate a submission bundle directory:**
 
 ```bash
-bin/console validate /path/to/submission/bundle
+fega validate /path/to/submission/bundle
 ```
 
 **Validate a ZIP archive:**
 
 ```bash
-bin/console validate submission-bundle.zip
+fega validate submission-bundle.zip
 ```
 
 **Validate a TSV file with specific resource type:**
 
 ```bash
-bin/console validate -t Dataset datasets.tsv
+fega validate -t Dataset datasets.tsv
 ```
 
 **Validate with JSON output:**
 
 ```bash
-bin/console validate -f json /path/to/bundle
+fega validate -f json /path/to/bundle
 ```
 
 **Validate with verbose output:**
 
 ```bash
-bin/console validate -v /path/to/bundle
+fega validate -v /path/to/bundle
 ```
 
 #### Resource Types
@@ -448,25 +505,6 @@ The following resource types are supported for validation:
 
 ---
 
-## Development
+## Github repository
 
-### Requirements
-
-- PHP 8.2+
-- Symfony 7.2+
-- Composer 2.8+
-
-### Key Dependencies
-
-- `opis/json-schema` - JSON schema validation
-- `symfony/console` - Command-line interface framework
-- `symfony/http-client` - HTTP API communication
-- `symfony/yaml` - YAML file processing
-
-### Configuration
-
-The CLI tool uses configuration files located in the `config/` directory:
-
-- `config/schemas/` - JSON schema files for validation
-- `config/packages/` - Framework configuration
-- `config/services.yaml` - Service configuration
+https://github.com/sib-swiss/fhdportal-cli
