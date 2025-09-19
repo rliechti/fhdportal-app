@@ -24,6 +24,17 @@ Download the appropriate binary for your platform using **Dowload CLI Tool** but
 chmod +x fega-linux  # or fega-macos-arm
 ```
 
+2. **MacOS** security:
+
+Recent version of macOS prevents the execution of this unsigned binary. To overcome this limitation run the following command:
+
+```bash
+xattr -dr com.apple.quarantine fega-macox-x64    # Intel Mac
+xattr -dr com.apple.quarantine fega-macox-arm    # Apple Silicon Mac
+```
+
+
+
 2. **Rename for convenience** (optional):
 
 ```bash
@@ -47,9 +58,7 @@ sudo mv fega /usr/local/bin/
 # Windows - move to a directory in your PATH or add directory to PATH
 ```
 
-4. **MacOS** security:
 
-   Recent version of macOS prevents the execution of this unsigned binary. To overcome this limitation, go to System Settings > Privacy & Security, then scroll down to find the app listed under "Security" and click "Open Anyway."
 
 ### Usage with Binaries
 
