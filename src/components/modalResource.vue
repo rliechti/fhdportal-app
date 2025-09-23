@@ -528,4 +528,8 @@ html body .v-theme--light, html body .v-theme--dark {
 .v-input--horizontal .v-btn.v-btn--icon {
   border-radius: 0;
 }
+.v-card .v-card {
+  border: none;
+  box-shadow: none !important;
+}
 </style>
