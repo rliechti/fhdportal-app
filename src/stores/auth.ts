@@ -100,12 +100,14 @@ export const useAuthStore = defineStore({
            const seed = seedIdx === -1 ? userKey : userKey.substring(0, seedIdx - 1)
            HTTP.delete(`/users/${this.user.sub}/public-key/${params.type}/${seed}`)
              .then(() => {
-               const idx = this.user[params.type+"PublicKeys"].indexOf(params.userKey)
-               if (idx > -1) {
-                 this.user[params.type+"PublicKeys"].splice(idx, 1)
-               }
-               this.refreshToken()
-               resolve(true)
+               this.refreshToken().then(() => {
+                 const idx = this.user[params.type+"PublicKeys"].indexOf(params.userKey)
+                 if (idx > -1) {
+                   this.user[params.type+"PublicKeys"].splice(idx, 1)
+                 }
+                  resolve(true)
+               })
+
              })
              .catch(reject)
          })
@@ -118,10 +120,12 @@ export const useAuthStore = defineStore({
              params
            })
              .then(() => {
-               this.user[params.type+"PublicKeys"] = this.user[params.type+"PublicKeys"] || []
-               this.user[params.type+"PublicKeys"].push(params.userKey)
-               this.refreshToken()
-               resolve(true)
+               this.refreshToken().then(() => {
+                this.user[params.type+"PublicKeys"] = this.user[params.type+"PublicKeys"] || []
+                this.user[params.type+"PublicKeys"].push(params.userKey)
+                
+                resolve(true) 
+               })
              })
              .catch(err => reject(err.message))
          })
