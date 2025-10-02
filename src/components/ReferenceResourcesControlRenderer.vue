@@ -4,7 +4,7 @@
       {{ cardTitle }} 
       <v-text-field
         label="filter..."
-        append-inner-icon="mdi-magnify"
+        prepend-inner-icon="mdi-magnify"
         density="compact"
         variant="outlined"
         class="float-right"
