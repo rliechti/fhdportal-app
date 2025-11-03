@@ -22,13 +22,13 @@ async function init(onInitCallback: () => void): Promise<void> {
     let initOptions = {
       onLoad: 'check-sso',
       // scope: 'openid profile roles dac:read dac:write policy:read policy:write submission:read membership:read membership:write dataset:read dac-portal-audience',
-      checkLoginIframe: true
+      checkLoginIframe: false
       // silentCheckSsoRedirectUri: window.location.origin + "/assets/silent-check-sso.html"
     }
     if (options.url == 'http://0.0.0.0:8080') {
       initOptions = {
             onLoad: 'check-sso',
-            checkLoginIframe: true
+            checkLoginIframe: false
             // silentCheckSsoRedirectUri: window.location.origin + "/assets/silent-check-sso.html"
       }
     }
