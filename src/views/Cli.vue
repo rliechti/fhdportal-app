@@ -2,26 +2,28 @@
   <div class="CLI maxWidth" style="position: relative">
     <v-sheet min-height="70vh" rounded="lg">
       <!-- <v-btn color="primary" @click="downloadCli" >Download CLI tool</v-btn> -->
-      <v-btn
+      <v-menu>
+        <template v-slot:activator="{ props }">
+          <v-btn
             color="primary"
+            v-bind="props"
+            append-icon="mdi-download"
             style="position: absolute; right: 10px; top: 10px; width: 200px"
           >
-        <v-menu>
-          <template v-slot:activator="{ props }">
-            <v-btn color="primary" v-bind="props" append-icon="mdi-download"> Download CLI Tool </v-btn>
-          </template>
-          <v-list>
-            <v-list-item
-              v-for="(item, index) in binaries"
-              :key="item.title"
-              :value="item.value"
-              @click="downloadCli(item.value)"
-            >
-              <v-list-item-title>{{ item.title }}</v-list-item-title>
-            </v-list-item>
-          </v-list>
-        </v-menu>
-      </v-btn>
+            Download CLI Tool
+          </v-btn>
+        </template>
+        <v-list>
+          <v-list-item
+            v-for="(item, index) in binaries"
+            :key="item.title"
+            :value="item.value"
+            @click="downloadCli(item.value)"
+          >
+            <v-list-item-title>{{ item.title }}</v-list-item-title>
+          </v-list-item>
+        </v-list>
+      </v-menu>
       <div class="github-markdown-body">
         <Cli />
       </div>
