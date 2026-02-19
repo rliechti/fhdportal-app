@@ -1,8 +1,8 @@
 <template>
   <v-container style="overflow: auto">
     <v-card width="100%">
-      <v-card-title
-        >{{ title }}
+      <v-card-title 
+        >{{ title }} 
         <v-chip v-if="readonly" class="float-right mr-5" color="warning"
           >read only</v-chip
         >
@@ -22,7 +22,7 @@
         <v-tab value="file">Batch creations with file</v-tab>
       </v-tabs>
       <template v-if="nav == 'form'">
-        <v-card v-if="data_schema">
+        <v-card v-if="data_schema" class="vcard-json-forms">
           <json-forms
             :data="data"
             :schema="data_schema"
@@ -31,7 +31,17 @@
             :readonly="readonly"
             @change="updateData"
           />
-          <p v-if="error" class="bg-red">{{ error }}</p>
+          <v-card v-if="error.errors.length" :title="error.title">
+            <v-card-text>
+              <v-list lines="one">
+                <v-list-item
+                  v-for="err in error.errors"
+                  :key="err"
+                  :title="err"
+                ></v-list-item>
+              </v-list>
+            </v-card-text>
+          </v-card>
         </v-card>
       </template>
 
@@ -39,10 +49,7 @@
         <v-container>
           <v-card
             variant="flat"
-            :title="`Multiple ${typeLabel.replace(
-              /([A-Z])/g,
-              ' $1',
-            )} entries can be created in batch`"
+            :title="`Multiple ${typeLabel.replace( /([A-Z])/g, ' $1', )} entries can be created in batch`"
           >
             <v-card-subtitle
               >Download, fill in and upload an Excel template
@@ -71,10 +78,11 @@
                 label="Upload the Excel file, or one or multiple CSV file..."
                 @change="uploadAction"
               ></v-file-input>
+			
             </div>
-            <v-data-table
+            <v-data-table 
               v-if="uploadedResources.length > 0"
-              :items="uploadedResources"
+              :items="uploadedResources" :headers="uploadedResourcesHeaders"
             >
               <template #item.status="{ value }">
                 <v-chip :color="getStatusClass(value)" size="small">{{
@@ -82,7 +90,17 @@
                 }}</v-chip>
               </template>
             </v-data-table>
-            <p v-if="error" class="bg-red">{{ error }}</p>
+            
+            <v-card v-if="error.errors.length" :title="error.title" variant="tonal" color="error" class="mt-5">
+              <v-list lines="one">
+                <v-list-item
+                  v-for="err in error.errors"
+                  :key="err"
+                  :title="err"
+                ></v-list-item>
+              </v-list>
+            </v-card>
+
           </v-card>
         </v-container>
       </template>
@@ -210,10 +228,14 @@ export default defineComponent({
       analysisStore: null,
       sampleStore: null,
       experimentStore: null,
-      error: '',
+      error: {
+        title: '',
+        errors: []
+      },
       nav: 'form',
       study_public_id: null,
       uploadedResources: [],
+      uploadedResourcesHeaders:[],
       renderers: Object.freeze(renderers),
       upload: false,
       files: null,
@@ -275,7 +297,6 @@ export default defineComponent({
           link.click()
         })
         .catch((err) => {
-          console.info(err)
           _this.$notify({
             title: err.response.statusText,
             text: err.response.data,
@@ -335,6 +356,8 @@ export default defineComponent({
 
     uploadAction() {
       let _this = this
+      this.error.title = '';
+      this.error.errors = []
       if (_this.files) {
         _this.filesUploading = true
         let formData = new FormData()
@@ -377,12 +400,39 @@ export default defineComponent({
 
         // _this.currentStore.uploadSamples(_this.study_public_id,formData).then(uploadedResources => {
         current_function
-          .then((uploadedResources) => {
-            let msg = uploadedResources.length + ' ' + _this.cas
-            if (uploadedResources.length > 1) msg += 's'
-            msg += ' uploaded successfully'
-            _this.$notify({ title: 'Success', text: msg, type: 'success' })
-            _this.uploadedResources = uploadedResources
+          .then((result) => {
+            _this.$notify({type: result.success?'success':'error', text: result.message})
+            if (result.success){
+              let uploadedResources = []
+              _.forEach(result.resources, r => {
+                r.resource.status = r.success ? "success" : "error"
+                r.resource.comment = r.success ? '' : r.message
+                if (r.success && r.action_type_id === 'CRE'){
+                  r.resource.comment = 'created'
+                }
+                if (r.success && r.action_type_id === 'MOD'){
+                  r.resource.comment = 'updated'
+                }
+                let oneResource = r.resource
+                _.forEach(_this.data_schema['required'],function(s){
+                  if (oneResource[s] === undefined && oneResource.properties[s] !== undefined){
+                    oneResource[s] = oneResource.properties[s]
+                  }
+                })
+                uploadedResources.push(oneResource)
+              })              
+              _this.uploadedResourcesHeaders = [{title:'Status',value:'status'},{title:'Comment',value:'comment'}];
+              _.forEach(_this.data_schema['required'],function(s){
+                _this.uploadedResourcesHeaders.push({title:s.replace("_"," "),value:s});
+              })
+              _this.uploadedResources = uploadedResources
+            }
+            
+            else{
+              _this.error.title = result.message
+              _this.error.errors = result.errors
+            }
+            
             _this.filesUploading = false
           })
           .catch((err) => {
@@ -528,8 +578,17 @@ html body .v-theme--light, html body .v-theme--dark {
 .v-input--horizontal .v-btn.v-btn--icon {
   border-radius: 0;
 }
+
 .v-card .v-card {
   border: none;
   box-shadow: none !important;
 }
+.vcard-json-forms .v-card .v-card-text, .vcard-json-forms .v-card .v-card-title{
+  padding: 5px 0;
+}
+
+.vcard-json-forms .v-card .v-card-text, .vcard-json-forms .v-card .v-card-title{
+  padding: 5px 0;
+}
+
 </style>

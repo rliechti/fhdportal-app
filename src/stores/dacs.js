@@ -26,8 +26,13 @@ export const useDacStore = defineStore('dacs', {
     },
     submitRequest (params){
       return new Promise((resolve,reject) => {
-        console.log(params)
-        resolve(params)
+      HTTP.post(`/dacs/${params.dataset_id}/request`,params)
+        .then((res) => {
+          resolve(res.data)
+        })
+        .catch((err) => {
+          reject(err)
+        })
       })
     },
     getRequestForm(dataset_id){

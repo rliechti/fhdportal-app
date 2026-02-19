@@ -11,7 +11,7 @@
           :study_id="study_id"
           :type="modal.type"
           :input_data="modal.data"
-          :hide_upload="true"
+          :hide_upload="false"
           :title="modal.title"
           :edit="modal.edit"
           :permissions="modal.permissions"
@@ -72,7 +72,8 @@
             <template v-if="!upload">
               <v-data-table
                 fixed-header
-                height="calc(100vh - 550px)"
+                height="calc(40vh)"
+                style="min-height: 300px"
                 v-if="experiments.length"
                 v-model="selectedExperiments"
                 :items="experimentTableItems"
@@ -333,6 +334,7 @@ export default defineComponent({
         this.experimentStore
           .deleteExperiments(params)
           .then(() => {
+            this.$emit('updateStudy')  
             this.$notify({
               title: 'Success',
               text: `${params.length} experiment${params.length > 1 ? 's' : ''} deleted successfully`,
@@ -499,6 +501,7 @@ export default defineComponent({
       this.experimentStore
         .editExperiment(param)
         .then(() => {
+          _this.$emit('updateStudy')  
           _this.showForm = false
           _this.data = {}
           _this.$notify({

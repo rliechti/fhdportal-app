@@ -28,3 +28,9 @@ crypt4gh encrypt --recipient_pk ingestion.pubkey < file_to_encrypt > encrypted_f
 
 The command reads the file from `stdin` (with `<` ) and output the encrypted version to `stdout` (with `>` ).  
 Replace `file_to_encrypt` and `encrypted_file.c4gh` with the appropriate filenames but make sure to not use the same filename for both reading and writing because your SHELL would then truncate both files before you even read or write.
+
+ Compute SHA256 checksum of the encrypted file:
+ 
+ ```bash
+ sha256sum encrypted_file.c4gh > encrypted_file.c4gh.sha256
+ ```

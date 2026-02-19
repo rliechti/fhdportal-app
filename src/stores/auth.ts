@@ -9,7 +9,8 @@ interface User {
   refreshToken: string
   sshPublicKeys: string[]
   c4ghPublicKeys: string[]
-  roles: string[]
+  roles: string[],
+  dtpas: string[]
 }
 
 export const useAuthStore = defineStore({
@@ -26,6 +27,7 @@ export const useAuthStore = defineStore({
         sshPublicKeys: [] as string[],
         c4ghPublicKeys: [] as string[],
         roles: [] as string[],
+        dtpas: [] as string[]
       } as User,
       test: false as boolean,
     }
@@ -62,7 +64,6 @@ export const useAuthStore = defineStore({
       }
     },
     async logout() {
-      console.log('logout')
       try {
         await authService.logout(import.meta.env.VITE_APP_URL)
         await this.clearUserData()
@@ -72,7 +73,6 @@ export const useAuthStore = defineStore({
     },
     async refreshToken() {
       try {
-				console.log("auth.ts refreshToken")
         const keycloak = await authService.refreshToken()
         this.initOAuth(keycloak, false)
       } catch (error) {
@@ -105,9 +105,9 @@ export const useAuthStore = defineStore({
                  if (idx > -1) {
                    this.user[params.type+"PublicKeys"].splice(idx, 1)
                  }
-                  resolve(true)
-               })
 
+                 resolve(true)                 
+               })
              })
              .catch(reject)
          })
@@ -123,13 +123,22 @@ export const useAuthStore = defineStore({
                this.refreshToken().then(() => {
                 this.user[params.type+"PublicKeys"] = this.user[params.type+"PublicKeys"] || []
                 this.user[params.type+"PublicKeys"].push(params.userKey)
-                
-                resolve(true) 
+                 
+                resolve(true)                 
                })
              })
              .catch(err => reject(err.message))
          })
        }
-     }
+     },
+     async getUserDTPA () {
+      return new Promise((resolve, reject) => {
+        HTTP.get('/users/dtpa').then(res => {
+          this.user.dtpas = res.data
+          resolve(res.data)
+        }).catch(err => reject(err))        
+      })
+    },
+
   },
 })

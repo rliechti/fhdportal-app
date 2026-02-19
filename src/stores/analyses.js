@@ -38,7 +38,7 @@ export const useAnalysisStore = defineStore('analyses', {
       let promises = []
       _.forEach(params, (p) => {
         const promise = new Promise((resolve, reject) => {
-          HTTP.delete(`/submissions/${p.study_id}/analyses/${p.analyse_id}`)
+          HTTP.delete(`/submissions/${p.study_id}/analyses/${p.analysis_id}`)
             .then((res) => {
               const deletedAnalysisId = res.data
               let idx = _.findIndex(this.analyses, function (ana) {

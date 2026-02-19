@@ -47,13 +47,12 @@
             </template>
           </v-list-item>
         </v-list>
-
         <v-text-field
           v-if="add"
           v-model="newUser.email"
           append-icon="mdi-send"
           clear-icon="mdi-close-circle"
-          label="Enter email adress"
+          label="Enter email address"
           type="email"
           variant="filled"
           clearable
@@ -100,7 +99,7 @@
       @click="init()"
       ><v-icon class="mr-1" icon="mdi-share"></v-icon> Share
     </v-btn>
-    <v-btn v-else class="float-right" @click="init()">Manage permissions</v-btn>
+    <v-btn v-else class="float-right" color="grey-lighten-4" @click="init()">Manage permissions</v-btn>
   </span>
 </template>
 
@@ -194,9 +193,10 @@ export default defineComponent({
     searchUser() {
       this.submissionStore
         .getUsers({ email: this.newUser.email })
-        .then((user) => {
-          if (user) {
-            this.newUser = user
+        .then((users) => {
+          if (users.length) {
+            const user = users[0]
+            this.newUser = JSON.parse(JSON.stringify(user))
             this.newUser.study_id = this.study.id
             this.newUser.status = 'validated'
           } else {

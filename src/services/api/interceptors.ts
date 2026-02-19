@@ -2,8 +2,9 @@ import apiService from '@/services/api'
 
 const add = (store) => {
   apiService.interceptors.request.use(
-    (config) => {
+    async (config) =>  {
       if (store.authenticated) {
+        await store.refreshToken()
         config.headers['Authorization'] = 'Bearer ' + store.user.token
         config.headers['x-access-token'] = 'Bearer ' + store.user.token
         config.headers['X-Forwarded-Prefix'] = '/api'

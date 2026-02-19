@@ -70,7 +70,8 @@
             <div v-if="!loading">
               <v-data-table
                 fixed-header
-                height="calc(100vh - 550px)"
+                height="calc(40vh)"
+                style="min-height: 300px"
                 v-if="runs.length"
                 v-model="selectedRuns"
                 :items="runs"
@@ -112,19 +113,13 @@
                   <v-btn
                     size="small"
                     variant="outlined"
-                    @click="
-                      showResource(
-                        item.properties.sample_public_id,
-                        'Sample',
-                      )
-                    "
-                  >
+                    @click=" showResource( item.properties.sample_public_id, 'Sample', ) " >
+
                     <v-icon class="mr-1" icon="mdi-eye-outline" />
                     {{ formatId(item.properties.sample_public_id) }}
-                    <v-tooltip activator="parent" location="top"
-                      ><span
-                        v-html="item.properties.sample_public_id"
-                      />
+                    <v-tooltip activator="parent" location="top">
+                      <span v-html="getResourceName(item.properties.sample_public_id,'Sample')" />
+
                     </v-tooltip>
                   </v-btn>
                 </template>
@@ -132,21 +127,14 @@
                   <v-btn
                     size="small"
                     variant="outlined"
-                    @click="
-                      showResource(
-                        item.properties.molecularexperiment_public_id,
-                        'molecularExperiment',
-                      )
-                    "
-                  >
+                    @click=" showResource( item.properties.molecularexperiment_public_id, 'molecularExperiment', ) " >
+
                     <v-icon class="mr-1" icon="mdi-eye-outline" />
                     {{
                       formatId(item.properties.molecularexperiment_public_id)
                     }}
-                    <v-tooltip activator="parent" location="top"
-                      ><span
-                        v-html="item.properties.molecularexperiment_public_id"
-                      />
+                    <v-tooltip activator="parent" location="top">
+                      <span v-html="getResourceName(item.properties.molecularexperiment_public_id,'molecularExperiment')" />
                     </v-tooltip>
                   </v-btn>
                 </template>
@@ -394,6 +382,7 @@ export default defineComponent({
     }
   },
   methods: {
+
     close(e) {
       this.resetModal()
       if (e && this.modal.permissions.indexOf('edit') > -1) {
@@ -444,6 +433,7 @@ export default defineComponent({
         this.runStore
           .deleteRuns(params)
           .then(() => {
+            this.$emit('updateStudy')  
             this.$notify({
               title: 'Success',
               text: `${params.length} run${params.length > 1 ? 's' : ''} deleted successfully`,
@@ -492,6 +482,7 @@ export default defineComponent({
         this.runStore
           .uploadRuns(this.study_public_id, formData)
           .then((uploadedRuns) => {
+            this.$emit('updateStudy')  
             const msg = `${uploadedRuns.length} run${uploadedRuns.length > 1 ? 's' : ''} uploaded successfully`
             this.$notify({ title: 'Success', text: msg, type: 'success' })
             this.uploadedRuns = uploadedRuns
@@ -704,6 +695,20 @@ export default defineComponent({
           }
         }
       }
+    },
+    getResourceName(publicId, resourceType){
+      if (resourceType.toLowerCase().indexOf('experiment') > -1) {
+        let idx = _.findIndex(this.experiments, (e) => e.public_id === publicId)
+        if (idx > -1) {
+          return this.experiments[idx].properties.title;
+        }
+      } else if (resourceType.toLowerCase().indexOf('sample') > -1) {
+        let idx = _.findIndex(this.samples, (s) => s.public_id === publicId)
+        if (idx > -1) {
+          return this.samples[idx].properties.title;
+        }
+      }
+      
     },
   },
 })

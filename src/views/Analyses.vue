@@ -27,9 +27,7 @@
         </p>
         <div v-else>
           <div v-if="study_public_id">
-            <h3
-              class="text-center mb-5 d-flex align-center pe-2"
-            >
+            <h3 class="text-center mb-5 d-flex align-center pe-2">
               <v-icon icon="mdi-graphql"></v-icon>&nbsp;{{
                 analyses.length
               }}
@@ -50,7 +48,12 @@
                 single-line
               ></v-text-field>
               <v-btn
-                v-if="study.analysisTypes.length && study.current_permission.indexOf('edit') > -1 && (study.status_type_id === 'DRA'||study.status_type_id === 'REV')"
+                v-if="
+                  study.analysisTypes.length &&
+                  study.current_permission.indexOf('edit') > -1 &&
+                  (study.status_type_id === 'DRA' ||
+                    study.status_type_id === 'REV')
+                "
                 v-for="analysisType in study.analysisTypes"
                 :key="analysisType.resource_type_id"
                 variant="flat"
@@ -61,13 +64,12 @@
                 create new
                 {{ analysisType.label.replace(/([A-Z])/g, ' $1').trim() }}...
               </v-btn>
-              
             </h3>
 
             <v-data-table
               fixed-header
-              height="calc(100vh - 550px)"
-            
+              height="calc(40vh)"
+              style="min-height: 300px"            
               v-if="analyses.length"
               v-model="selectedAnalyses"
               :items="analyses"
@@ -82,9 +84,7 @@
               show-select
               density="compact"
             >
-              <template #header.sample_public_ids="{}"
-                >Samples</template
-              >
+              <template #header.sample_public_ids="{}">Samples</template>
               <template #header.molecularexperiment_public_ids="{}"
                 >Experiments</template
               >
@@ -113,9 +113,7 @@
                     >
                       {{ item.properties.sample_public_ids.length }}
                       sample<template
-                        v-if="
-                          item.properties.sample_public_ids.length > 1
-                        "
+                        v-if="item.properties.sample_public_ids.length > 1"
                         >s</template
                       ><v-icon icon="mdi-menu-down" />
                     </v-btn>
@@ -128,8 +126,9 @@
                       :value="public_id"
                     >
                       <v-list-item-title
-                        @click="showResource(public_id, 'Sample')"
-                        >{{ public_id }}</v-list-item-title
+                        @click="showResource(public_id, 'Sample')">
+                         <span v-html="getResourceName(public_id,'Sample')" />
+                         </v-list-item-title
                       >
                     </v-list-item>
                   </v-list>
@@ -167,7 +166,7 @@
                     >
                       <v-list-item-title
                         @click="showResource(public_id, 'molecularExperiment')"
-                        >{{ public_id }}</v-list-item-title
+                        >   <span v-html="getResourceName(public_id,'molecularExperiment')" /></v-list-item-title
                       >
                     </v-list-item>
                   </v-list>
@@ -253,7 +252,7 @@
                     ></v-icon
                     >{{
                       (item.current_permission.indexOf('edit') < 0 &&
-                      item.current_permission.indexOf('review') > -1) ||
+                        item.current_permission.indexOf('review') > -1) ||
                       study.status_type_id !== 'DRA'
                         ? 'review'
                         : 'edit'
@@ -266,7 +265,15 @@
             <p v-else-if="!loading" class="text-center">
               <em>No analysis yet</em>
             </p>
-            <p v-if="study.analysisTypes.length && study.current_permission.indexOf('edit') > -1 && (study.status_type_id === 'DRA'||study.status_type_id === 'REV')" class="text-center">
+            <p
+              v-if="
+                study.analysisTypes.length &&
+                study.current_permission.indexOf('edit') > -1 &&
+                (study.status_type_id === 'DRA' ||
+                  study.status_type_id === 'REV')
+              "
+              class="text-center"
+            >
               <template v-if="selectedAnalyses.length">
                 <v-btn
                   v-if="!deleteAnalysis.status"
@@ -274,9 +281,8 @@
                   color="error"
                   variant="flat"
                   @click="deleteAnalyses('init')"
-                  >delete {{ selectedAnalyses.length }} selected <span
-                    v-if="selectedAnalyses.length > 1"
-                    >Analyses</span
+                  >delete {{ selectedAnalyses.length }} selected
+                  <span v-if="selectedAnalyses.length > 1">Analyses</span
                   ><span v-else>Analysis</span></v-btn
                 >
                 <template v-if="deleteAnalysis.status">
@@ -285,10 +291,8 @@
                     color="error"
                     variant="flat"
                     @click="deleteAnalyses('save')"
-                    >confirm deletion of
-                    {{ selectedAnalyses.length }} <span
-                      v-if="selectedAnalyses.length > 1"
-                      >Analyses</span
+                    >confirm deletion of {{ selectedAnalyses.length }}
+                    <span v-if="selectedAnalyses.length > 1">Analyses</span
                     ><span v-else>Analysis</span></v-btn
                   >
                   <v-btn
@@ -324,7 +328,7 @@ import moment from 'moment'
 export default defineComponent({
   name: 'Analyses',
   components: {
-    ModalResource
+    ModalResource,
   },
   props: ['study_id'],
   data() {
@@ -465,7 +469,7 @@ export default defineComponent({
       this.modal = {
         status: true,
         title: title,
-        edit: item.analysis_public_id,
+        edit: item.public_id,
         type: { name: item.analysis_type, label: item.analysis_type },
         permissions: item.current_permission,
         data: this.data,
@@ -483,14 +487,14 @@ export default defineComponent({
           _.forEach(this.selectedAnalyses, (id) => {
             params.push({
               study_id: this.study_id,
-              analysis_id: _.filter(this.analyses, (s) => s.id === id)[0]
-                .public_id,
+              analysis_id: _.filter(this.analyses, (s) => s.id === id)[0].public_id,
             })
           })
         }
         this.analysisStore
           .deleteAnalyses(params)
           .then(() => {
+            this.$emit('updateStudy')  
             this.$notify({
               title: 'Success',
               text: `${params.length} ${params.length > 1 ? 'analyses' : 'analysis'} deleted successfully`,
@@ -555,6 +559,7 @@ export default defineComponent({
         this.analysisStore
           .uploadAnalyses(this.study_public_id, formData)
           .then((uploadedAnalyses) => {
+            this.$emit('updateStudy')  
             const msg = `${uploadedAnalyses.length} analysis${uploadedAnalyses.length > 1 ? 's' : ''} uploaded successfully`
             this.$notify({ title: 'Success', text: msg, type: 'success' })
             this.uploadedAnalyses = uploadedAnalyses
@@ -764,6 +769,20 @@ export default defineComponent({
         }
       }
     },
+    getResourceName(publicId, resourceType){
+      if (resourceType.toLowerCase().indexOf('experiment') > -1) {
+        let idx = _.findIndex(this.experiments, (e) => e.public_id === publicId)
+        if (idx > -1) {
+          return this.experiments[idx].properties.title;
+        }
+      } else if (resourceType.toLowerCase().indexOf('sample') > -1) {
+        let idx = _.findIndex(this.samples, (s) => s.public_id === publicId)
+        if (idx > -1) {
+          return this.samples[idx].properties.title;
+        }
+      }
+    }
+      
   },
 })
 </script>

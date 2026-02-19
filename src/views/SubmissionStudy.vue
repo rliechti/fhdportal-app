@@ -2,103 +2,137 @@
   <div class="SubmissionStudy">
     <v-sheet min-height="70vh" rounded="lg">
       <v-dialog v-model="modal.status" width="95%">
-        <v-card width="100%" min-height="50vh" title="Upload entire study">
-          <div>
+        <v-card width="100%" min-height="50vh" title="Submit Full Study Package" class="px-3 py-3">
+          <div >
             <v-row>
-              <v-col :cols="uploadedResources.status?12:6">
-                <v-file-input
-                  v-if="!uploadedResources.status"
-                  v-model="files"
-                  style="margin-top: 20px"
-                  multiple
-                  counter
-                  show-size
-                  :loading="filesUploading"
-                  label="Upload one zip file..."
-                  @change="uploadAction"
-                ></v-file-input>
+              <v-col :cols="(uploadedResources.success) ? 12: (uploadedResources.loaded) ? 8:6">
+              	<div v-if="!uploadedResources.loaded">
+	                <v-file-input
+	                  v-model="files"
+	                  style="margin-top: 20px"
+	                  multiple
+	                  counter
+	                  show-size
+	                  :loading="filesUploading"
+	                  label="Upload one zip file..."
+	                  @change="uploadAction"
+	                ></v-file-input>
+   					<div class="text-center"><v-progress-circular color="primary" indeterminate  v-if="filesUploading"> </v-progress-circular> </div>
+			   </div>
                 <div v-else>
-                  <div v-if="uploadedResources.status == 'FAIL'" class="px-5">
-                    <p class="bg-red my-3 text-center">File upload fail</p>
-                    <p>
-                      {{ uploadedResources.message }} <br />
-                      {{ uploadedResources.data.comment }}
-                    </p>
-                    <ul class="ml-5 my-3">
-                      <template v-for="(d, t) in uploadedResources.data" :key="t">
-                        <li v-if="t != 'comment' && t != 'status'">
-                          {{ t }} : {{ d }}
-                        </li>
-                      </template>
-                    </ul>
-                  </div>
-                  <div v-else>
-                    <p class="bg-green mt-3 text-center">
-                      File uploaded successfully
-                    </p>
-                    <v-tabs
-                      v-if="uploadedResources.status"
-                      v-model="uploadedResources.nav"
-                      bg-color="green-lighten-5"
-                      class="mt-3"
-                      center-active
-                    >
-                      <v-tab
-                        v-for="key in uploadedResources.keys"
-                        :value="key"
-                        :key="key"
-                        >{{ key }}</v-tab
-                      >
-                    </v-tabs>
-                    <v-data-table
-                      v-if="uploadedResources.status"
-                      :items="uploadedResources.data[uploadedResources.nav]"
-                    ></v-data-table>
-                  </div>
-                  <p v-if="error" class="bg-red">{{ error }}</p>
+                  <div v-if="!uploadedResources.success" class="px-5">
+                  <p class="bg-red my-3 text-center">File upload fail</p>
+                  <p> {{ uploadedResources.message }} </p>
+
+                  <v-row >
+                   <v-col cols="4">
+
+                      <v-list density="compact">
+                        <v-list-item v-for="key in uploadedResources.keys" :key="key" :value="key" @click="uploadedResources.nav = key" color="primary" >
+                          <template v-slot:prepend>
+                            <v-icon icon="mdi-check-circle" v-if="uploadedResources.data[key].status=='SUCCESS'" color="green"></v-icon>
+                            <v-icon icon="mdi-cancel" v-if="uploadedResources.data[key].status=='FAIL'" color="red"></v-icon>
+                          </template>
+
+                          <v-list-item-title v-text="key" :active="(key==uploadedResources.nav)" color="blue"></v-list-item-title>
+                        </v-list-item>
+                      </v-list>
+                    </v-col>
+                    <v-col cols="8">
+                      <div v-if="uploadedResources && uploadedResources.data" class="mt-3">
+                        <h4>{{uploadedResources.nav}}</h4>
+                        <p>{{uploadedResources.data[uploadedResources.nav].totalRows}} resource<span v-if="uploadedResources.data[uploadedResources.nav].totalRows>1">s</span></p>
+                        <p >{{uploadedResources.data[uploadedResources.nav].status}} : {{uploadedResources.data[uploadedResources.nav].message}}</p>
+                        <ul>
+                          <li v-for="( error,line) in uploadedResources.data[uploadedResources.nav].errors">Line {{line}} : {{error.message}} <code>{{error.errors}}</code></li>
+                        </ul>
+                      </div>
+                    </v-col>
+                  </v-row>
                 </div>
-              </v-col>
-              <v-col cols="6" v-if="!uploadedResources.status">
-              <v-container>
-                <v-alert style="margin: 20px">
-                  <StudyUpload />
-                  <v-btn color="primary" @click="downloadCli">Download CLI tool</v-btn>
-                </v-alert>
+                <div v-else>
+                  <p class="bg-green mt-3 text-center">
+                    File uploaded successfully
+                  </p>
+                  <v-tabs
+                    v-if="uploadedResources.success"
+                    v-model="uploadedResources.nav"
+                    bg-color="green-lighten-5"
+                    class="mt-3"
+                    center-active
+                  >
+                    <v-tab
+                      v-for="key in uploadedResources.keys"
+                      :value="key"
+                      :key="key"
+                      >{{ key }}</v-tab
+                    >
+                  </v-tabs>
+                  <v-data-table
+                    v-if="uploadedResources.success"
+                    :items="uploadedResources.data[uploadedResources.nav].resources"
+                    :headers="batchUploadHeaders(uploadedResources.nav)"
+                    density="compact"
+                    hover
+                  >
+                  <template #item.action_type_id="{item}">
+                    <span class="text-uppercase">{{item.action_type_id==='CRE'?'creation':'update'}}: </span>
+                    <span class="text-start">
+                      <v-chip
+                      :color="item.success ? 'green' : 'red'"
+                      :text="`${item.success?'success':'fail'}`"
+                      class="text-uppercase"
+                      size="small"
+                      label
+                      ></v-chip>
+                    </span>
+                  </template>
+                </v-data-table>
+                  
+                </div>
+                </div>
+                
+               </v-col>
+                <v-col :cols="uploadedResources.loaded?4:6" v-if="!uploadedResources.success" >
+                <v-container>
+                  <v-alert style="margin: 20px">
+                    <StudyUpload />
+                    <v-btn color="primary" @click="downloadCli">Download CLI tool</v-btn>
+                  </v-alert>
               
-              </v-container>
-              </v-col>
-            </v-row>
+                </v-container>
+                </v-col>
+              </v-row>
+
+              
           </div>
           <p class="text-center mt-5">
-            <v-btn
-              color="secondary"
-              variant="outlined"
-              class="ml-2"
-              :disabled="filesUploading"
-              @click="closeModal()"
-            >
-              Close
-            </v-btn>
+            <v-btn color="secondary" variant="outlined" class="ml-2" :disabled="filesUploading" @click="closeModal()" > Close </v-btn>
+            <v-btn variant="outlined" class="ml-2" :disabled="filesUploading" @click="resetModal()" v-if="uploadedResources.loaded&& !uploadedResources.success"> Reset </v-btn>
+
           </p>
         </v-card>
       </v-dialog>
       <v-container v-if="study">
-        <v-btn class="float-right ml-2" @click="downloadStudy()"
+        <v-btn class="float-right ml-2" color="grey-lighten-4" @click="downloadStudy()"
           >Download Study</v-btn
         >
         <permissions v-model:study.access="study"></permissions>
-        <h1 v-if="study.id" class="text-center">
+        <h2 v-if="study.id" class="text-center">
           Study "{{ study.title }}"
-        </h1>
-        <h1 v-else class="text-center">New study</h1>
-        <v-stepper non-linear :model-value="step" class="mt-10">
+        </h2>
+        <h2 v-else class="text-center">New study</h2>
+                
+        
+        <v-stepper non-linear :model-value="step" class="mt-10" >
           <v-stepper-header>
             <template v-for="(idx, name) in steps" :key="`newStudy${idx}`">
               <v-stepper-item
-                :value="idx"
+                :edit-icon='null'
+                :value="getStepperValue(name)"
                 :editable="study.id !== undefined && study.id !== null"
-                :complete="idx <= step"
-                @click="changeStep(name, idx)"
+                 :color="colorBar(idx)"
+                @click="changeStep(name)"
               >
                 {{ name }}
               </v-stepper-item>
@@ -106,16 +140,18 @@
             </template>
           </v-stepper-header>
         </v-stepper>
-        <v-alert
-             type="warning"
-             variant="tonal"
-             prominent
-        >
-          <WarningSensitive style="margin: auto; padding: auto; " />
-        </v-alert>
-        <div class="mt-10">
+        <v-alert style="margin-top:10px" type="warning" variant="tonal" density="compact" prominent >
+          <WarningSensitive />
+        </v-alert class="little-v-alert">
+        <div class="mt-10" style="margin-top:20px !important">
 
-          <div v-if="+step === 0">
+          <p style="margin-bottom:10px">
+            <span style="color:white">t</span>
+            <v-btn v-show="step>1" color="orange-lighten-5" prepend-icon="mdi-chevron-left" @click="changeStep(null,step-1)">go back</v-btn>
+            <v-btn v-if="step<6 && study.public_id" color="orange-lighten-5" class='float-right' append-icon="mdi-chevron-right" @click="changeStep(null,step+1)">next</v-btn>
+          </p>
+
+          <div v-if="step == 1">
             <p
               v-if="study.status_type_id == 'PUB'"
               class="bg-green text-center"
@@ -131,7 +167,7 @@
             >
               <v-tab value="form">(Small) submission with web forms</v-tab>
               <v-tab value="file" @click="openUploadModal()"
-                >Large submissions in batch</v-tab
+                >Full submission with study package</v-tab
               >
             </v-tabs>
             <v-card v-if="nav == 'form'" id="studyForm">
@@ -141,11 +177,13 @@
                 :uischema="ui_schema"
                 :renderers="renderers"
                 :readonly="
-                  !showForm || (study_id !== 'new' && study.current_permission.indexOf('edit') === -1)
+                  !showForm ||
+                  (study_id !== 'new' &&
+                    study.current_permission.indexOf('edit') === -1)
                 "
                 @change="updateData"
               />
-              <v-card-actions>
+              <v-card-actions v-if="!readonly">
                 <p v-if="showForm" class="text-center">
                   <template v-if="!delete_study">
                     <v-btn color="primary" variant="flat" @click="submitForm">
@@ -202,24 +240,25 @@
               </v-card-actions>
             </v-card>
           </div>
-          <div v-if="step == 1">
-            <samples :study_id="study.id"></samples>
-          </div>
+
           <div v-if="step == 2">
-            <experiments :study_id="study.id"></experiments>
-          </div>
-          <div v-if="step == 3">
-            <runs :study_id="study.id"></runs>
-          </div>
-          <div v-if="step == 4">
-            <analyses :study_id="study.id"></analyses>
-          </div>
-          <div v-if="step == 5">
-            <datasets
-              :study_id="study.id"
-              @submitStudy="submitStudy()"
-            ></datasets>
-          </div>
+             <samples :study_id="study.id" @updateStudy="getStudy()"></samples>
+           </div>
+           <div v-if="step == 3">
+             <experiments :study_id="study.id"  @updateStudy="getStudy()"></experiments>
+           </div>
+           <div v-if="step == 4">
+             <runs :study_id="study.id" @updateStudy="getStudy()"></runs>
+           </div>
+           <div v-if="step == 5">
+             <analyses :study_id="study.id" @updateStudy="getStudy()"></analyses>
+           </div>
+           <div v-if="step == 6">
+             <datasets
+               :study_id="study.id"
+               @submitStudy="submitStudy()" @updateStudy="getStudy()"
+             ></datasets>
+           </div>
         </div>
       </v-container>
     </v-sheet>
@@ -280,7 +319,7 @@ export default defineComponent({
     Analyses,
     Datasets,
     StudyUpload,
-    WarningSensitive
+    WarningSensitive,
   },
   data() {
     return {
@@ -289,16 +328,24 @@ export default defineComponent({
       delete_study: false,
       modal: { status: false },
       filesUploading: false,
-      uploadedResources: { nav: 'study', status: false, data: null },
+      uploadedResources: { nav: 'study', success: false, data: null,loaded:false },
       steps: {
-        study: 0,
-        samples: 1,
-        experiments: 2,
-        runs: 3,
-        analyses: 4,
-        datasets: 5,
+        study: 1,
+        samples: 2,
+        experiments: 3,
+        runs: 4,
+        analyses: 5,
+        datasets: 6,
       },
-      step: 0,
+      // steps: {
+      //   study: 0,
+      //   samples: 1,
+      //   experiments: 2,
+      //   runs: 3,
+      //   analyses: 4,
+      //   datasets: 5,
+      // },
+      step: 1,
       sampleStore: null,
       error: '',
       study: null,
@@ -306,7 +353,7 @@ export default defineComponent({
       properties: [],
       data_schema: null,
       ui_schema: null,
-      showForm: false,
+      showForm: true,
       renderers: Object.freeze(renderers),
       data: {},
     }
@@ -314,6 +361,12 @@ export default defineComponent({
   computed: {
     ...mapState(useSubmissionStore, ['studies']),
     ...mapState(useSchemaStore, ['schemas']),
+    readonly() {
+      return (
+        this.study.current_permission !== undefined && this.study.current_permission.indexOf('edit') === -1
+      )
+    }
+    
   },
   mounted() {
     let query_key = this.$route.query ? _.keys(this.$route.query) : null
@@ -330,26 +383,64 @@ export default defineComponent({
       }
     })
   },
-  // watch: {
-  // 	$route (n,o){
-  // 		console.info(n);
-  // 		console.info(o);
-  // 	}
-  // },
+
   methods: {
+    
+    batchUploadHeaders(resource_name){
+      let fields = []
+      if (this.uploadedResources.data[resource_name].resources !== undefined && this.uploadedResources.data[resource_name].resources.length){
+        _.forEach(Object.keys(this.uploadedResources.data[resource_name].resources[0]), field => {
+          if (field === 'action_type_id'){
+            fields.push({
+              title: 'action',
+              key: field
+            })
+          } else if (field !== 'id' && field !== 'success'){
+            fields.push({
+              title: field,
+              key: field
+            })
+          }
+        })
+      }
+      return fields
+    },
+    
+    getStepperValue(resource_name){
+      if (resource_name=='study')return 1;
+      else if (resource_name=='samples')return (this.study.nb_samples)?this.study.nb_samples:0;
+      else if (resource_name=='experiments')return (this.study.nb_experiments)?this.study.nb_experiments:0;
+      else if (resource_name=='runs')return (this.study.nb_runs)?this.study.nb_runs:0;
+      else if (resource_name=='analyses')return (this.study.nb_analyses)?this.study.nb_analyses:0;
+      else if (resource_name=='datasets')return (this.study.nb_datasets)?this.study.nb_datasets:0;
+      
+    },
+    colorBar(idx){
+      let color = null;
+      if (idx==1 && this.study.public_id) color= 'green';
+      if (idx==2 && this.study.nb_samples>0)color= 'green';
+      if (idx==3 && this.study.nb_experiments>0)color= 'green';
+      if (idx==4 && this.study.nb_runs>0)color= 'green';
+      if (idx==5 && this.study.nb_analyses>0)color= 'green';
+      if (idx==6 && this.study.nb_datasets>0)color= 'green';
+      return color;
+    },
+    resetModal(){
+        this.uploadedResources = { nav: 'study', success: false, data: null,loaded:false }
+    },
     openUploadModal() {
       this.files = null
-      this.uploadedResources = { nav: 'study', status: false, data: null }
+      this.uploadedResources = { nav: 'study', success: false, data: null,loaded:false }
       this.modal.status = true
     },
     closeModal() {
       let _this = this
       if (
-        _this.uploadedResources.status == 'SUCCESS' &&
+        _this.uploadedResources.success &&
         _this.uploadedResources.data &&
         _this.uploadedResources.data['Study']
       ) {
-        let study_id = _this.uploadedResources.data['Study'][0].public_id
+        let study_id = _this.uploadedResources.data['Study'].resources[0].public_id
         this.$router.push('/submissions/' + study_id)
         this.study_id = study_id
         this.getStudy()
@@ -358,10 +449,11 @@ export default defineComponent({
         this.modal.status = false
       }
     },
+
     uploadAction() {
       let _this = this
       if (_this.files) {
-        _this.filesUploading = true
+        _this.filesUploading = 'primary'
         let formData = new FormData()
         // files
         let fidx = 0
@@ -371,29 +463,37 @@ export default defineComponent({
         }
         // additional data
         formData.append('nb_files', fidx)
-        // formData.append("resource_type_id", 'Study');
 
         this.submissionStore
           .uploadStudy(formData)
           .then((uploadedResources) => {
-            if (uploadedResources.status == 'SUCCESS') {
+            let keys = _.keys(uploadedResources.resources)
+            if (uploadedResources.success) {
               _this.$notify({
                 title: 'Success',
                 text: 'File uploaded successfully',
                 type: 'success',
               })
-              let keys = _.keys(uploadedResources.output)
+              let keys = _.keys(uploadedResources.resources)
               _this.uploadedResources = {
+                loaded:true,
                 nav: 'Study',
-                status: uploadedResources.status,
-                data: uploadedResources.output,
+                message:uploadedResources.message,
+                success: uploadedResources.success,
+                data: uploadedResources.resources,
                 keys: keys,
               }
             } else {
+				let tmp_nav = 'Study';
+				_.forEach(uploadedResources.output,function(k,o){ if (o.status =='FAIL') tmp_nav = k; })
+              let keys = _.keys(uploadedResources.output)
               _this.uploadedResources = {
-                status: uploadedResources.status,
-                message: uploadedResources.message,
-                data: JSON.parse(uploadedResources.data),
+                loaded:true,
+                nav: tmp_nav,
+                success: uploadedResources.success,
+                data: uploadedResources.output,
+                errors: uploadedResources.errors,
+                keys: keys,
               }
               _this.$notify({
                 title: 'Error',
@@ -406,11 +506,17 @@ export default defineComponent({
           })
           .catch((err) => {
             _this.filesUploading = false
-            _this.$notify({
-              title: err.response.statusText,
-              text: err.response.data,
-              type: 'error',
-            })
+            console.info(err);
+            // _this.$notify({
+            //   title: err.response.statusText,
+            //   text: err.response.data,
+            //   type: 'error',
+            // })
+            //   _this.$notify({
+            //   title: "fail",
+            //   text: "fail",
+            //   type: 'error',
+            // })
           })
       }
     },
@@ -448,7 +554,14 @@ export default defineComponent({
       this.showForm = true
     },
     changeStep(n, step) {
+      if (!step && n){
+        _.forEach(this.steps,function(idx,s){ if (s==n) step=idx; });
+      }
       this.step = step
+      if (!n) {
+        let step_names = _.keys(this.steps)
+        n = step_names[step]
+      }
       let query = { [n]: true }
       this.$router.push({ query: query })
     },
@@ -490,23 +603,32 @@ export default defineComponent({
       this.submissionStore
         .editStudy(this.data)
         .then((res) => {
-          this.study = res
-          this.properties = res.properties
-          const action = this.data.id ? 'updated' : 'registered'
-          this.$notify({
-            title: 'Study ' + action + ' successfully',
-            type: 'success',
-          })
-          this.showForm = false
-          if (this.study_id == 'new') {
-            this.$router.push('/submissions/' + res.public_id)
-            this.study_id = res.public_id
-            this.getStudy(1)
+          if (res.success !== undefined && !res.success){
+            this.$notify({
+              type: 'error',
+              title: res.message
+            })
+          }
+          else{
+            this.study = res
+            this.properties = res.properties
+            const action = this.data.id ? 'updated' : 'registered'
+            this.$notify({
+              title: 'Study ' + action + ' successfully',
+              type: 'success',
+            })
+            this.showForm = false
+            if (this.study_id == 'new') {
+              this.$router.push('/submissions/' + res.public_id)
+              this.study_id = res.public_id
+              this.getStudy(2)
+            }            
           }
         })
-        .catch((err) => {
-          console.log(err)
-        }
+        .catch(
+          (err) => {
+            console.log(err)
+          },
           // this.$notify({
           //   title: err.response.statusText,
           //   text: err.response.data,
@@ -521,6 +643,7 @@ export default defineComponent({
         .getStudy(this.study_id)
         .then((study) => {
           this.study = study
+          if(this.study.status=='published') this.showForm = false;
           this.nav = 'form'
           this.modal.status = false
           this.properties = []
@@ -585,7 +708,6 @@ export default defineComponent({
           })
         })
     },
-    
   },
   provide() {
     return {
@@ -604,6 +726,9 @@ export default defineComponent({
   padding: 16px 40px;
 }
 
+.v-alert .little-v-alert{
+  margin-top:100px;
+}
 .markdown-body pre {
   padding: 0px 40px;
 }
@@ -618,7 +743,11 @@ export default defineComponent({
 .v-toolbar__content {
   height: 48px !important;
 }
-div.v-input__control > div > div.v-field__outline > div.v-field__outline__notch > label {
-/*  color: #333 !important;*/
+div.v-input__control
+  > div
+  > div.v-field__outline
+  > div.v-field__outline__notch
+  > label {
+  /*  color: #333 !important;*/
 }
 </style>

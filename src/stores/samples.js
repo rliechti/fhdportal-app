@@ -79,15 +79,11 @@ export const useSampleStore = defineStore('samples', {
         )
           .then((res) => {
             let s = res.data
-            if (s.action_type_id == 'MOD') {
-              let idx = _.findIndex(this.samples, function (sa) {
-                return sa.id == s.id
-              })
-              if (idx > -1) {
-                this.samples[idx] = s
-              } else {
-                this.samples.push(s)
-              }
+            let idx = _.findIndex(this.samples, function (sa) {
+              return sa.id == s.id
+            })
+            if (idx > -1) {
+              this.samples[idx] = s
             } else {
               this.samples.push(s)
             }

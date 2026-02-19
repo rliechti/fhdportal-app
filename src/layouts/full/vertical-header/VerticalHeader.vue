@@ -34,7 +34,7 @@ watch(priority, (newPriority) => {
             <Menu2Icon size="20" stroke-width="1.5" />
         </v-btn>
         <v-spacer />
-        <p class="text-center text-red" >This is a development instance of the FHDPortal. Data might be erased without warning</p>
+        <p class="text-center text-red" >This is a development instance of the FHDPortal. Data might be erased without warning. Only use dummy data.</p>
 
         <v-spacer />
         <!-- ---------------------------------------------- -->

@@ -8,7 +8,7 @@ export const useSubmissionStore = defineStore('submissions', {
     study: {},
     roles: null,
     statusTypes: null,
-    schemas: null,
+    schemas: null
   }),
   getters: {},
   actions: {

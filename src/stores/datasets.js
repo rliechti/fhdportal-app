@@ -104,10 +104,57 @@ export const useDatasetStore = defineStore('datasets', {
               this.datasets[idx] = res.data
             }
             resolve(res.data)
+
+
+
+            // let s = res.data
+            // if (s.success){
+            //   if (s.resources.length){
+            //     if (s.resources[0].action_type_id == 'MOD') {
+            //       let idx = _.findIndex(this.datasets, function (sa) {
+            //         return sa.id == s.resources[0].id
+            //       })
+            //       if (idx > -1){
+            //         this.datasets[idx] = s;
+            //       }
+            //
+            //     } else {
+            //       let keys = _.keys(this.samples)
+            //       let max = _.max(keys)
+            //       let idx = keys.length ? +max + 1 : 0
+            //       this.datasets[idx] = s.resources[0]
+            //       resolve(res.data)
+            //     }
+            //   }
+            // }
           })
           .catch((err) => {
             reject(err)
           })
+      })
+    },
+    downloadDataset(dataset_id) {
+      return new Promise((resolve, reject) => {
+        HTTP.get('/datasets/' + dataset_id + '/download', {
+          responseType: 'arraybuffer',
+        })
+          .then((res) => {
+            resolve(res)
+          })
+          .catch((err) => reject(err))
+      })
+    },
+    uploadDatasets(studyId, formData) {
+      return new Promise((resolve, reject) => {
+        HTTP.post(`/submissions/${studyId}/upload-datasets`, formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        })
+          .then((res) => {
+            resolve(res.data)
+          })
+          .catch((err) => reject(err))
       })
     },
     setPolicy(params) {

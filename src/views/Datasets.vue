@@ -6,7 +6,7 @@
           cas="dataset"
           :study_id="study_public_id"
           :type="dataset_type"
-          :hide_upload="true"
+          :hide_upload="false"
           :permissions="modal.permissions"
           :input_data="modal.data"
           :title="modal.title"
@@ -14,6 +14,10 @@
           @closeModal="close($event)"
         ></modal-resource>
       </v-dialog>
+      <v-dialog v-model="modalDga.status"  max-width="800">
+        <modal-dac-form :dataset_id="modalDga.dataset_id" :policy_id="modalDga.policy_id" :form="modalDga.form" @closeDacModal="modalDga.status=false" :readonly="false"></modal-dac-form>
+      </v-dialog>
+      
       <v-container>
         <p v-if="error" class="text-danger">{{ error }}</p>
         <h1 v-if="!study_public_id" class="text-center">Datasets</h1>
@@ -68,7 +72,8 @@
 
             <v-data-table
               fixed-header
-              height="calc(50vh - 350px)"
+              height="calc(40vh)"
+              style="min-height: 300px"
               v-if="datasets.length"
               v-model="selectedDatasets"
               :items="datasets"
@@ -126,6 +131,7 @@
               <template #item.actions="{ item }">
                 <p class="text-center" style="white-space: nowrap">
                   <v-btn
+                  class="mr-1"
                     :disabled="
                       item.current_permission &&
                       item.current_permission.indexOf('edit') < 0 &&
@@ -153,7 +159,6 @@
                         : 'edit'
                     }}
                   </v-btn>
-                  <!-- <v-btn :disabled="item.current_permission.indexOf('edit')<0" size="small" style="display:inline-flex;margin-bottom:1px" color="info" variant="outlined" @click="selectPolicy(item)"><v-icon class="mr-1" icon="mdi-police-badge"></v-icon>Policy {{item.properties.policy_public_id}}</v-btn> -->
                   <v-dialog v-model="showPolicies[item.id]" max-width="600">
                     <template #activator="{ props: activatorProps }">
                       <v-btn
@@ -264,13 +269,14 @@
                           variant="outlined"
                           color="primary"
                           @click="setDatasetPolicy(item, true)"
+                          :disabled="!item.properties.policy_id"
                           >Set policy</v-btn
                         >
                       </v-card-actions>
                     </v-card>
                   </v-dialog>
-                  <v-dialog v-model="modalPolicy.status"  max-width="800">
-                    <modal-policy-form :dataset_id="modalPolicy.dataset_id" :policy_id="modalPolicy.policy_id" :form="modalPolicy.form" @closePolicyModal="modalPolicy.status=false" :readonly="true"></modal-policy-form>
+                  <v-dialog v-model="modalDaa.status"  max-width="800">
+                    <modal-policy-form :dataset_id="modalDaa.dataset_id" :policy_id="modalDaa.policy_id" :form="modalDaa.form" @closePolicyModal="modalDaa.status=false" :readonly="true"></modal-policy-form>
                   </v-dialog>
                 </p>
               </template>
@@ -379,6 +385,7 @@ import { useSampleStore } from '@/stores/samples.js'
 import { useSchemaStore } from '@/stores/schemas.js'
 import ModalResource from '@/components/modalResource.vue'
 import ModalPolicyForm from '@/components/modalPolicyForm.vue'
+import ModalDacForm from '@/components/modalDacForm.vue'
 import { mapState } from 'pinia'
 import _ from 'lodash'
 import moment from 'moment'
@@ -387,7 +394,8 @@ export default defineComponent({
   name: 'Datasets',
   components: {
     ModalResource,
-    ModalPolicyForm
+    ModalPolicyForm,
+    ModalDacForm
   },
   props: ['study_id'],
   data() {
@@ -457,7 +465,13 @@ export default defineComponent({
       selectedPolicies: {},
       submitDialog: false,
       submissionInProgress: false,
-      modalPolicy: {
+      modalDaa: {
+        status: false, 
+        dataset_id: null,
+        policy_id:null,
+        form: null
+      },
+      modalDga: {
         status: false, 
         dataset_id: null,
         policy_id:null,
@@ -600,6 +614,8 @@ export default defineComponent({
       if (item.policy_status === 'draft') return 'secondary'
       if (item.policy_status === 'pending') return 'warning'
       if (item.policy_status === 'valid') return 'success'
+      if (item.policy_status === 'approved') return 'success'
+      if (item.policy_status === 'error') return 'error'
       return ''
     },
     isSelected(value) {
@@ -662,6 +678,7 @@ export default defineComponent({
         this.datasetStore
           .deleteDatasets(params)
           .then(() => {
+            this.$emit('updateStudy')  
             this.$notify({
               title: 'Success',
               text: `${params.length} dataset${params.length > 1 ? 's' : ''} deleted successfully`,
@@ -723,6 +740,7 @@ export default defineComponent({
         this.datasetStore
           .uploadDatasets(this.study_public_id, formData)
           .then((uploadedDatasets) => {
+            this.$emit('updateStudy')  
             const msg = `${uploadedDatasets.length} dataset${uploadedDatasets.length > 1 ? 's' : ''} uploaded successfully`
             this.$notify({ title: 'Success', text: msg, type: 'success' })
             this.uploadedDatasets = uploadedDatasets
@@ -965,11 +983,18 @@ export default defineComponent({
       this.submitDialog = false
     },
     getPolicyForm (dataset_id, policy_id, form){
+      const formName = _.toLower(form.replace("-form",""))
+      const modal = "modal"+_.startCase(formName)
+      const otherModal = (modal==='modalDga') ? "modalDaa" : "modalDga"
       this.dacStore.getPolicyForm(dataset_id, policy_id, form).then(data => {
-        this.modalPolicy.status = true
-        this.modalPolicy.policy_id = policy_id
-        this.modalPolicy.dataset_id = dataset_id
-        this.modalPolicy.form = form
+        if (modal === 'modalDga'){
+          this.showPolicies[dataset_id] = false
+        }
+        this[otherModal].status = false
+        this[modal].policy_id = policy_id
+        this[modal].dataset_id = dataset_id
+        this[modal].form = data[formName]
+        this[modal].status = true
       }).catch(err => this.$notify({type: 'danger',text: err}))
     }
   },

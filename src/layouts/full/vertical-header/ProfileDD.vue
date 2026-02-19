@@ -5,13 +5,8 @@ import { useAuthStore } from '@/stores/auth.ts'
 const store = useAuthStore()
 
 const userRoles = computed(() => {
-  return store.user.roles.filter((r) => {
-    return (
-      r !== 'default-roles-fega_test' &&
-      r !== 'uma_authorization' &&
-      r !== 'offline_access'
-    )
-  })
+  const roles = store.user.roles.filter(r => r !== 'default-roles-fega_test' && r !== 'uma_authorization' && r !== 'offline_access');
+  return  [...new Set(roles)];
 })
 </script>
 

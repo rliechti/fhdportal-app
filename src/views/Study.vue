@@ -1,8 +1,8 @@
 <template>
   <div class="Study">
     <v-sheet min-height="70vh" rounded="lg">
-    <v-dialog v-model="modalPolicy.status" width="50%">
-      <modal-policy-form :dataset_id="modalPolicy.dataset_id" :policy_id="modalPolicy.policy_id" :form="modalPolicy.form" @closePolicyModal="modalPolicy.status=false"></modal-policy-form>
+    <v-dialog v-model="modal.status" width="50%">
+      <modal-request :dataset_id="modal.dataset_id" :dataset_title="modal.title" @closeModal="closeModal"></modal-request>
     </v-dialog>    
     <v-container>
     <v-row class="mt-10">
@@ -62,8 +62,10 @@
               </v-list-item-title>
               <p class="text-caption py-2">
                 <v-chip v-for="type in item.types" :key="`${item.public_id}-${type}`"  size="small">{{type}}</v-chip>
-                <!-- <v-btn class="float-right" size="small" color="primary" @click="requestAccessForm(item.public_id,item.title)">request access...</v-btn> -->
-                <v-btn class="float-right" size="small" color="primary" @click="getPolicyForm(item.public_id, item.policy_id,'daa-form')">request access...</v-btn>
+                <v-btn class="float-right" size="small" color="primary" @click="requestAccessForm(item.id,item.title)" v-if="item.request === undefined || item.request === null || item.request.dataset_id === undefined">request access...</v-btn>
+                <template v-else><strong class="float-right" :class="item.request.request_status==='approved'?'text-success':(item.request.request_status==='rejected'?'text-error':'text-info')">Access request {{item.request.request_status}} on {{formatDate(item.request.action_time)}}</strong></template>
+                
+                <!-- <v-btn class="float-right" size="small" color="primary" @click="getPolicyForm(item.public_id, item.policy_id,'daa-form')">request access...</v-btn> -->
               </p>
               <p class="">{{item.description}}</p>
             </v-list-item>
@@ -82,11 +84,12 @@ import { defineComponent } from 'vue'
 import { mapState } from 'pinia'
 import { useStudyStore } from '@/stores/studies.js'
 import { useDacStore } from '@/stores/dacs.js'
-import ModalPolicyForm from '@/components/modalPolicyForm.vue'
-
+// import ModalPolicyForm from '@/components/modalPolicyForm.vue'
+import ModalRequest from '@/components/modalRequest.vue'
+import moment from 'moment'
 export default defineComponent({
   name: 'Study',
-  components: { ModalPolicyForm },
+  components: { ModalRequest },
   computed: {
     ...mapState(useStudyStore, ['study']),
   },
@@ -94,36 +97,53 @@ export default defineComponent({
     return {
       loading: false,
       errorMsg: '',
-      modalPolicy: { status: false, dataset_id: null, title: '',policy_id: null, form: null }
+      // modalPolicy: { status: false, dataset_id: null, title: '',policy_id: null, form: null }
+      modal: { status: false, dataset_id: null, title: '' }
     }
   },
   methods: {
-    getPolicyForm (dataset_id, policy_id, form){
-      this.dacStore.getPolicyForm(dataset_id, policy_id, form).then(data => {
-        this.modalPolicy.status = true
-        this.modalPolicy.policy_id = policy_id
-        this.modalPolicy.dataset_id = dataset_id
-        this.modalPolicy.form = form
-      }).catch(err => this.$notify({type: 'danger',text: err}))
+    closeModal(){
+      this.modal.status = false
+      this.getStudy()
+    },
+    getStudy(){
+      const studyStore = useStudyStore()
+      const study_id = this.$route.params.study_id
+      this.loading = true
+      studyStore.getStudy(study_id).then(() => {
+        this.loading = false
+        this.errorMsg = '';
+      }).catch(err => {
+        this.loading = false
+        if (err.status === 404){
+          this.errorMsg = "Unknown study"
+        }
+        else{
+          this.errorMsg = "Error retrieving the study"
+        }
+      })      
+    },
+    requestAccessForm (dataset_id, title){
+      this.modal.status = true
+      this.modal.dataset_id = dataset_id
+      this.modal.title = title
+    },    
+    formatDate(value) {
+      return moment(value).format('DD.MM.YYYY')
     }
+    
+    // getPolicyForm (dataset_id, policy_id, form){
+    //   this.dacStore.getPolicyForm(dataset_id, policy_id, form).then(data => {
+    //     this.modalPolicy.status = true
+    //     this.modalPolicy.policy_id = policy_id
+    //     this.modalPolicy.dataset_id = dataset_id
+    //     this.modalPolicy.form = form
+    //   }).catch(err => this.$notify({type: 'danger',text: err}))
+    // }
   },
   mounted(){
     this.dacStore = useDacStore()
-    const studyStore = useStudyStore()
-    const study_id = this.$route.params.study_id
-    this.loading = true
-    studyStore.getStudy(study_id).then(() => {
-      this.loading = false
-      this.errorMsg = '';
-    }).catch(err => {
-      this.loading = false
-      if (err.status === 404){
-        this.errorMsg = "Unknwown study"
-      }
-      else{
-        this.errorMsg = "Error retrieving the study"
-      }
-    })
+    this.getStudy()
   }
 })
 </script>

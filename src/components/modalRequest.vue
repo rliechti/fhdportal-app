@@ -2,28 +2,30 @@
   <v-container style="overflow: auto">
     <v-card width="100%">
       <v-card-title>Request Access to Dataset: {{dataset_title}}</v-card-title>
-      <modal-policy-form :dataset_id="modalPolicy.dataset_id" :policy_id="modalPolicy.policy_id" :form="modalPolicy.form" @closePolicyModal="modalPolicy.status=false" :readonly="true"></modal-policy-form>
-      <!-- <json-forms
+      <v-card-text>
+      <json-forms
         :data="formData"
         :schema="dataSchema"
         :uischema="uiSchema"
         :renderers="renderers"
         @change="updateData"
-        v-if="loaded"
-      /> -->
+      />
       <user-keys type="c4gh" :show='true'></user-keys>
-      <p class="text-center my-5">
-        <v-btn color="primary" variant="outlined" class="mx-2" :disabled="disabled" @click="submitRequest">Send request</v-btn>
-        <v-btn
-          color="secondary"
-          variant="outlined"
-          class="ml-2"
-          @click="closeModal"
-        >
-          Cancel
-        </v-btn>
-      </p>
-      
+      </v-card-text>
+      <v-card-actions>
+        <p class="text-center my-5">
+          <v-btn color="primary" variant="outlined" class="mx-2" :disabled="disabled" @click="submitRequest">Send request</v-btn>
+          <v-btn
+            color="secondary"
+            variant="outlined"
+            class="ml-2"
+            @click="closeModal"
+          >
+            Cancel
+          </v-btn>
+        </p>
+      </v-card-actions>
+            
     </v-card>
   </v-container>
 </template>
@@ -48,26 +50,86 @@ export default defineComponent({
   props: ['dataset_id', 'dataset_title','policy_id'],
   components: {
     JsonForms,
-    UserKeys,
-    ModalPolicyForm
+    UserKeys
   },
   computed: {
     ...mapState(useAuthStore, ['user'])
   },
   data () {
     return {
-      // uiSchema: {},
-      // dataSchema: {},
-      // formData: {},
+      uiSchema: {
+        type: "VerticalLayout",
+        elements: [
+          {
+            type: "Control",
+            scope: "#/properties/username",
+            label: "Login Name",
+            options: {
+              readonly: true
+            }
+          },
+          {
+            type: "Control",
+            scope: "#/properties/institution",
+            label: "Institution"
+          },
+          {
+            type: "Control",
+            scope: "#/properties/comment",
+            label: "Comment",
+            options: {
+                multi: true,
+                rows: 5,
+                widget: "textarea"
+            }
+          }
+        ]
+      },
+      dataSchema: {
+        type: "object",
+        properties: {
+      		username: {
+      			type: "string",
+      			minLength: 3,
+      			description: "login name",
+            readOnly: true
+      		},
+          institution: {
+            type: "string",
+            minLength: 3,
+            description: "Please enter the name of your institution"
+          },
+          comment: {
+            type: "string",
+      			minLength: 10
+          },
+          c4gh_public_key: {
+            type: "string",
+            minLength: 10
+          }
+        },
+        required: [
+      		"username",
+          "institution",
+          "comment"
+        ]
+      },
+      formData: {
+        username: "",
+        institution: "",
+        comment: "",
+        c4gh_public_key: "",
+        dataset_id: ""
+      },
       loaded: false,
       disabled: false,
       renderers: Object.freeze(renderers),
-      modalPolicy: {
-        status: false, 
-        dataset_id: null,
-        policy_id:null,
-        form: null
-      }
+      // modalPolicy: {
+      //   status: false,
+      //   dataset_id: null,
+      //   policy_id:null,
+      //   form: null
+      // }
     }
   },
   methods: {
@@ -91,31 +153,35 @@ export default defineComponent({
     submitRequest (){
       const dacStore = useDacStore()
       this.formData.c4gh_public_key = this.user.c4ghPublicKeys[0]
-      dacStore.submitRequest(this.formData).then(() => {
-        this.$notify({type: "success", title: "request sent successfully", text: "This is not yet implemented"})
+      dacStore.submitRequest(this.formData).then((msg) => {
+        this.$notify({type: "success", title: "request sent successfully", text: msg})
+        this.closeModal();
       }).catch(err =>{
-        this.$notify({type: "error",title: err.message})
+        this.$notify({type: "error",title: err})
+
       })
     }
   },
   mounted () {
-    const dacStore = useDacStore()
-    const store = useAuthStore()
-    if (!store.authenticated) {
-      store.login()
-      return false
-    }
-    const dataset_id = this.dataset_id
-    dacStore.getRequestForm(dataset_id).then(res => {
-      this.uiSchema = res.data.uiSchema
-      this.dataSchema = res.data.formSchema
-      this.formData = res.data.formData
-      this.formData.username = this.user.username
-      this.formData.datasetID = this.dataset_id
-      this.loaded = true
-    }).catch(err => {
-      this.$notify({type: "error", message: err})
-    })
+    this.formData.username = this.user.username
+    this.formData.dataset_id = this.dataset_id
+    // const dacStore = useDacStore()
+    // const store = useAuthStore()
+    // if (!store.authenticated) {
+    //   store.login()
+    //   return false
+    // }
+    // const dataset_id = this.dataset_id
+    // dacStore.getRequestForm(dataset_id).then(res => {
+    //   this.uiSchema = res.data.uiSchema
+    //   this.dataSchema = res.data.formSchema
+    //   this.formData = res.data.formData
+    //   this.formData.username = this.user.username
+    //   this.formData.datasetID = this.dataset_id
+    //   this.loaded = true
+    // }).catch(err => {
+    //   this.$notify({type: "error", message: err})
+    // })
   }
 })
 </script>

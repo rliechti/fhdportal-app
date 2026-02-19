@@ -2,31 +2,13 @@
   <v-container style="overflow: auto">
     <v-card width="100%">
       <v-card-title>{{title}}</v-card-title>
-      <!-- <json-forms
+      <json-forms
         :data="formData"
         :schema="dataSchema"
         :uischema="uiSchema"
         :renderers="renderers"
-        v-if="loaded"
-      /> -->
-      <json-forms
-        :schema="dataSchema"
-        :data="formData"
-        :renderers="renderers"
-        v-if="loaded"
-        :readonly="readonly"
       />
       <user-keys type="c4gh" :show='true' v-if="!readonly"></user-keys>
-      <p class="text-center my-5">
-        <v-btn
-          color="secondary"
-          variant="outlined"
-          class="ml-2"
-          @click="closeModal"
-        >
-          Cancel
-        </v-btn>
-      </p>
       
     </v-card>
   </v-container>
@@ -60,9 +42,69 @@ export default defineComponent({
   data () {
     return {
       title: '',
-      uiSchema: {},
-      dataSchema: {},
-      formData: {},
+      uiSchema: {
+        type: "VerticalLayout",
+        elements: [
+          {
+            type: "Control",
+            scope: "#/properties/username",
+            label: "Login Name",
+            options: {
+              readonly: true
+            }
+          },
+          {
+            type: "Control",
+            scope: "#/properties/institution",
+            label: "Institution"
+          },
+          {
+            type: "Control",
+            scope: "#/properties/comment",
+            label: "Comment",
+            options: {
+                multi: true,
+                rows: 5,
+                widget: "textarea"
+            }
+          }
+        ]
+      },
+      dataSchema: {
+        type: "object",
+        properties: {
+      		username: {
+      			type: "string",
+      			minLength: 3,
+      			description: "login name",
+            readOnly: true
+      		},
+          institution: {
+            type: "string",
+            minLength: 3,
+            description: "Please enter the name of your institution"
+          },
+          comment: {
+            type: "string",
+      			minLength: 10
+          },
+          c4gh_public_key: {
+            type: "string",
+            minLength: 10
+          }
+        },
+        required: [
+      		"username",
+          "institution",
+          "comment"
+        ]
+      },
+      formData: {
+        username: "",
+        institution: "",
+        comment: "",
+        c4gh_public_key: ""
+      },
       loaded: false,
       disabled: false,
       renderers: Object.freeze(renderers)
@@ -74,24 +116,21 @@ export default defineComponent({
     }
   },
   mounted () {
-    const dacStore = useDacStore()
-    const store = useAuthStore()
-    if (!store.authenticated) {
-      store.login()
-      return false
-    }
-    const dataset_id = this.dataset_id
-    const policy_id = this.policy_id
-    const form = this.form
-    const form_type = form.replace("-form","")
-    dacStore.getPolicyForm(dataset_id, policy_id, form).then(data => {
-      this.loaded = true
-      this.uiSchema = data[form_type].uiSchema
-      this.dataSchema = data[form_type].schema
-      this.formData = data[form_type].initialValues
-      this.title = form_type.toUpperCase()+" form"
-    }).catch(err => this.$notify({type: 'danger',text: err}))
-
+    // const dacStore = useDacStore()
+    // const store = useAuthStore()
+    // if (!store.authenticated) {
+    //   store.login()
+    //   return false
+    // }
+    // const form_type = form.replace("-form","")
+    // dacStore.getPolicyForm(dataset_id, policy_id, form).then(data => {
+    //   this.loaded = true
+    //   this.uiSchema = data[form_type].uiSchema
+    //   this.dataSchema = data[form_type].schema
+    //   this.formData = data[form_type].initialValues
+    //   this.title = form_type.toUpperCase()+" form"
+    // }).catch(err => this.$notify({type: 'danger',text: err}))
+    this.formData.username = this.user.username
   }
 })
 </script>

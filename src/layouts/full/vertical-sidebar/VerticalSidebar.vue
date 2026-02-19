@@ -17,18 +17,21 @@ const sidebarMenu = shallowRef(sidebarItems);
 const store = useAuthStore()
 
 const sidebarVisibleMenu = computed(() => {
-  if (store.user !== undefined && store.user.roles !== undefined && store.user.roles.indexOf("admin-fega")> -1){
-    return sidebarMenu.value;
-  }
-  else{
-    let items = []
-    _.forEach(sidebarMenu.value, item => {
-      if (item.admin === undefined || item.admin !== true){
-        items.push(item)
-      }
-    })
-    return items
-  }
+  const isAdmin = (store.user !== undefined && store.user.roles !== undefined && store.user.roles.indexOf("admin-fega")> -1)
+  const isSubmitter = (store.user !== undefined && store.user.roles !== undefined && store.user.roles.indexOf("submitter")> -1)
+  let items = []
+  _.forEach(sidebarMenu.value, item => {
+    if ((item.admin === undefined || item.admin !== true) && (item.submitter === undefined || item.submitter !== true)){
+      items.push(item)
+    }
+    if (item.admin !== undefined && item.admin === true && isAdmin){
+      items.push(item)
+    }
+    if (item.submitter !== undefined && item.submitter === true && isSubmitter){
+      items.push(item)
+    }
+  })
+  return items
 })
 
 </script>

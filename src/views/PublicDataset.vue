@@ -2,7 +2,7 @@
   <div class="Datasety">
     <v-sheet min-height="70vh" rounded="lg">
     <v-dialog v-model="modal.status" width="50%">
-      <modal-request :dataset_id="modal.dataset_id" :dataset_title="modal.title" @closeModal="modal.status=false"></modal-request>
+      <modal-request :dataset_id="modal.dataset_id" :dataset_title="modal.title" @closeModal="closeModal"></modal-request>
     </v-dialog>    
     <v-container>
     <v-row class="mt-10">
@@ -14,7 +14,8 @@
           <h3 class="text-center py-3">{{errorMsg}}</h3>
         </v-card>
         <v-card v-else>
-          <v-card-title>{{dataset.title}}</v-card-title>
+          <v-card-title>{{dataset.title}}
+          <v-btn size="small" class="mr-3 float-right" color="secondary" @click="downloadDataset(dataset)" >download</v-btn></v-card-title>
           <v-card-subtitle>{{dataset.public_id}}</v-card-subtitle>
           <v-card-text>
             <v-row>
@@ -44,7 +45,12 @@
                 </template>
               </template>
             </v-row>
-            <p class="text-center my-6"><v-btn size="small" color="primary" @click="requestAccessForm(dataset.id, dataset.title)">request access...</v-btn></p>
+            <p class="text-center my-6">
+              <v-btn size="small" color="primary" @click="requestAccessForm(dataset.id, dataset.title)" v-if="dataset.request === undefined || dataset.request === null || dataset.request.dataset_id === undefined">request access...</v-btn>
+              <template v-else>
+                <strong :class="dataset.request.request_status==='approved'?'text-success':(dataset.request.request_status==='rejected'?'text-error':'text-info')">Access request {{dataset.request.request_status}} on {{formatDate(dataset.request.action_time)}}</strong>
+              </template>
+            </p>
           </v-card-text>
           <v-divider></v-divider>
           <v-card-title v-if="dataset.files !== undefined">Files ({{dataset.files.length}})</v-card-title>
@@ -97,6 +103,7 @@ import { JsonForms } from '@jsonforms/vue'
 import { vuetifyRenderers } from '@jsonforms/vue-vuetify'
 import UserKeys from '@/components/UserKeys.vue'
 import ModalRequest from '@/components/modalRequest.vue'
+import moment from 'moment'
 import _ from 'lodash'
 const renderers = [
   ...vuetifyRenderers
@@ -121,36 +128,66 @@ export default defineComponent({
     }
   },
   methods: {
+    getDataset(){
+      const datasetId = this.$route.params.dataset_id
+      const datasetStore = useDatasetStore()      
+      datasetStore.getDataset(datasetId).then(() => {
+        this.loading = false
+        this.errorMsg = '';
+      }).catch(err => {
+        this.loading = false
+        if (err.status === 404){
+          this.errorMsg = "Unknown dataset"
+        }
+        else{
+          this.errorMsg = "Error retrieving the dataset"
+        }
+      })
+    },
+    closeModal(){
+      this.modal.status = false
+      this.getDataset()
+    },
     formatFileSize(bytes, decimalPoint = 2) {
       if (bytes === 0) return '0 Bytes';
-  
       const k = 1024; // Use 1024 for binary-based sizes
       const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
       const i = Math.floor(Math.log(bytes) / Math.log(k));
-  
       return parseFloat((bytes / Math.pow(k, i)).toFixed(decimalPoint)) + ' ' + sizes[i];
     },
     requestAccessForm (dataset_id, title){
       this.modal.status = true
       this.modal.dataset_id = dataset_id
       this.modal.title = title
-    }
+    },
+    formatDate(value) {
+      return moment(value).format('DD.MM.YYYY')
+    },
+    downloadDataset(dataset){
+        let _this = this
+        const datasetStore = useDatasetStore()   
+        datasetStore
+          .downloadDataset(dataset.public_id)
+          .then((res) => {
+            let blob = new Blob([res.data], { type: 'application/vnd.ms-excel' })
+            let link = document.createElement('a')
+            link.href = window.URL.createObjectURL(blob)
+            link.download = 'dataset_'+dataset.public_id+'.xlsx'
+            link.click()
+            // _this.downloading = false
+          })
+          .catch((err) =>
+            this.$notify({
+              title: err.response.statusText,
+              text: err.response.data,
+              type: 'error',
+            }),
+          )
+      },
   },
   mounted(){
-    const datasetStore = useDatasetStore()
-    const dataset_id = this.$route.params.dataset_id
-    datasetStore.getDataset(dataset_id).then(() => {
-      this.loading = false
-      this.errorMsg = '';
-    }).catch(err => {
-      this.loading = false
-      if (err.status === 404){
-        this.errorMsg = "Unknwown dataset"
-      }
-      else{
-        this.errorMsg = "Error retrieving the dataset"
-      }
-    })
+
+    this.getDataset();
     
   }
 })

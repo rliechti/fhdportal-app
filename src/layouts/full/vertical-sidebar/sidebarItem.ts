@@ -11,7 +11,8 @@ import {
     UsersIcon,
     CodeIcon,
     AtIcon,
-		TerminalIcon
+	TerminalIcon,
+	CloudQuestionIcon,
 } from 'vue-tabler-icons';
 
 export interface menu {
@@ -45,7 +46,13 @@ const sidebarItem: menu[] = [
         to: '/submissions',
         protected: true
     },
-
+	  {
+	    title: 'My uploaded files',
+	    icon: FilesIcon,
+	    to: '/files',
+	    protected: true,
+	    submitter: true,
+	  },
     { header: 'Catalogue' },
     {
         title: 'Studies/Cohorts',
@@ -78,6 +85,12 @@ const sidebarItem: menu[] = [
         icon: TerminalIcon,
         to: '/cli',
         protected: false
+    },
+    {
+      title: 'User manual',
+      icon: Book2Icon,
+      to: '/user_manual',
+      protected: false,
     },
     {
         title: 'Privacy policy',
@@ -124,7 +137,14 @@ const sidebarItem: menu[] = [
         to: '/admin/users',
         protected: true,
         admin: true
-    }
+    },
+    {
+      title: 'Dataset Requests',
+      icon: CloudQuestionIcon,
+      to: '/admin/requests',
+      protected: true,
+      admin: true,
+    },
 ];
 
 export default sidebarItem;

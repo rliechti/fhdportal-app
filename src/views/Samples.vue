@@ -62,9 +62,11 @@
               
             </h3>
 
+              <!-- height="calc(100vh - 500px)" -->
             <v-data-table
               fixed-header
-              height="calc(100vh - 550px)"
+              height="calc(40vh)"
+              style="min-height: 300px"
               v-if="samples.length"
               v-model="selectedSamples"
               class="mt-5"
@@ -348,6 +350,7 @@ export default defineComponent({
         this.sampleStore
           .deleteSamples(params)
           .then(() => {
+            this.$emit('updateStudy')  
             this.$notify({
               title: 'Success',
               text: `${params.length} sample${params.length ? 's' : ''} deleted successfully`,
@@ -402,6 +405,7 @@ export default defineComponent({
         this.sampleStore
           .getStudySamples({ study_id: this.study_public_id })
           .then(() => {
+            this.$emit('updateStudy')  
             this.loading = false
             this.loaded = true
           })

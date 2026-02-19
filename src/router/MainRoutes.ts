@@ -1,6 +1,7 @@
 // Components
 import Home from '@/views/Home.vue'
 import Submission from '@/views/Submission.vue'
+import Files from '@/views/Files.vue'
 import Studies from '@/views/Studies.vue'
 import Study from '@/views/Study.vue'
 import SubmissionStudy from '@/views/SubmissionStudy.vue'
@@ -10,10 +11,12 @@ import MetadataView from '@/views/Metadata.vue'
 import CliView from '@/views/Cli.vue'
 import Privacy from '@/views/Privacy.vue'
 import TermsOfUse from '@/views/TermsOfUse.vue'
+import UserManual from '@/views/UserManual.vue'
 import Teams from '@/views/Teams.vue'
 import Codebase from '@/views/Codebase.vue'
 import Contacts from '@/views/Contacts.vue'
 import Users from '@/views/admin/Users.vue'
+import Requests from '@/views/admin/Requests.vue'
 
 const MainRoutes = {
     path: '/main',
@@ -29,6 +32,14 @@ const MainRoutes = {
         component: Home,
         meta: {
           allowAnonymous: true,
+        },
+      },
+      {
+        path: '/files',
+        name: 'Files',
+        component: Files,
+        meta: {
+          allowAnonymous: false,
         },
       },
       {
@@ -112,6 +123,14 @@ const MainRoutes = {
         },
       },
       {
+        path: '/user_manual',
+        name: 'UserManual',
+        component: UserManual,
+        meta: {
+          allowAnonymous: true,
+        },
+      },
+      {
         path: '/teams',
         name: 'Teams',
         component: Teams,
@@ -139,6 +158,14 @@ const MainRoutes = {
         path: '/admin/users',
         name: 'Users',
         component: Users,
+        meta: {
+          allowAnonymous: false,
+        },
+      },
+      {
+        path: '/admin/requests',
+        name: 'Requests',
+        component: Requests,
         meta: {
           allowAnonymous: false,
         },

@@ -98,7 +98,7 @@ export default defineComponent({
           this.loading = false
         })
         .catch((err) => {
-          this.snotify({ title: 'Error', text: err, type: 'error' })
+          this.$notify({ title: 'Error', text: err, type: 'error' })
           this.loading = false
         })
     })
