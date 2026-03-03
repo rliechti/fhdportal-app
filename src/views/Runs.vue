@@ -385,7 +385,8 @@ export default defineComponent({
 
     close(e) {
       this.resetModal()
-      if (e && this.modal.permissions.indexOf('edit') > -1) {
+      if (e ) {
+      // if (e && this.modal.permissions.indexOf('edit') > -1) {
         //Get samples because when create sample via file, new samples are not displayed here. Idem for edition.
         this.getRuns()
       }
@@ -505,6 +506,7 @@ export default defineComponent({
         this.runStore
           .getStudyRuns({ study_id: this.study_public_id })
           .then(() => {
+			this.$emit('updateStudy')  
             this.loading = false
             this.loaded = true
             this.setTableHeaders()

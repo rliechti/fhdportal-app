@@ -402,6 +402,7 @@ export default defineComponent({
         this.experimentStore
           .getStudyExperiments({ study_id: this.study_id })
           .then(() => {
+  			this.$emit('updateStudy')  
             this.loaded = true
             this.setTableHeaders()
           })

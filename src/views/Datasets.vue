@@ -763,6 +763,7 @@ export default defineComponent({
         this.datasetStore
           .getStudyDatasets({ study_id: this.study_public_id })
           .then((datasets) => {
+  			this.$emit('updateStudy')  
             this.loaded = true
             this.setTableHeaders()
             _.forEach(datasets, (d) => {

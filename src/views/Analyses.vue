@@ -582,6 +582,7 @@ export default defineComponent({
         this.analysisStore
           .getStudyAnalyses({ study_id: this.study_public_id })
           .then(() => {
+  			this.$emit('updateStudy')  
             this.loading = false
             this.loaded = true
             this.setTableHeaders()
