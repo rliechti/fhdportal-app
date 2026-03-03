@@ -153,7 +153,14 @@
               </template>
             </v-data-table>
 
-            <p v-else class="text-center"><em>No sample yet</em></p>
+            <div v-else class="text-center pt-2">
+				<p>
+					Sample describe the biological origin of the sample, such as the individual, tissue, or cell line.<br>
+					Examples: patient blood sample, tumor biopsy, cultured cells, reference material.
+				</p>
+				<p>At least 1 sample required to proceed</p>
+			</div>
+			
             <p v-if="study.sampleTypes.length && study.current_permission.indexOf('edit') > -1 && (study.status_type_id === 'DRA'||study.status_type_id === 'REV')" class="text-center">
               <template v-if="selectedSamples.length">
                 <v-btn

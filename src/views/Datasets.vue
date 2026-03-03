@@ -282,7 +282,11 @@
               </template>
             </v-data-table>
 
-            <p v-else class="text-center"><em>No dataset yet</em></p>
+            <div v-else class="text-center pt-2">
+			Group related samples, runs, and analyses into a dataset for controlled access and distribution.<br>
+			A dataset represents the collection of data that authorized users will be able to request and access
+				<!-- <em>No dataset yet</em> -->
+			</div>
             <p
               v-if="
                 study.datasetTypes.length &&

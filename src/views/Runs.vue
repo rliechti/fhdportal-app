@@ -210,7 +210,11 @@
                 </template>
               </v-data-table>
 
-              <p v-else class="text-center"><em>No run yet</em></p>
+              <div v-else class="text-center pt-2">
+				  A run links a sample, a sequencing experiment, and the generated data files.<br>
+				  Use runs to associate biological samples with technical experiments and upload the corresponding raw data files (typically FASTQ, BAM, or CRAM files generated directly by the sequencing instrument)
+			  </div>
+			  
               <p
                 v-if="
                   study.runTypes.length &&

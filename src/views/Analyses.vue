@@ -262,9 +262,11 @@
               </template>
             </v-data-table>
 
-            <p v-else-if="!loading" class="text-center">
-              <em>No analysis yet</em>
-            </p>
+            <div v-else-if="!loading" class="text-center pt-2">
+			 Describe any computational processing or analysis performed on the raw sequencing data. <br>
+			 Examples include read alignment, variant calling, expression quantification, or other downstream analyses.
+			  <!-- <em>No analysis yet</em> -->
+            </div>
             <p
               v-if="
                 study.analysisTypes.length &&
