@@ -210,7 +210,11 @@
                 </template>
               </v-data-table>
 
-              <p v-else class="text-center"><em>No run yet</em></p>
+              <div v-else class="text-center pt-2">
+				  A run links a sample, a sequencing experiment, and the generated data files.<br>
+				  Use runs to associate biological samples with technical experiments and upload the corresponding raw data files (typically FASTQ, BAM, or CRAM files generated directly by the sequencing instrument)
+			  </div>
+			  
               <p
                 v-if="
                   study.runTypes.length &&
@@ -385,7 +389,8 @@ export default defineComponent({
 
     close(e) {
       this.resetModal()
-      if (e && this.modal.permissions.indexOf('edit') > -1) {
+      if (e ) {
+      // if (e && this.modal.permissions.indexOf('edit') > -1) {
         //Get samples because when create sample via file, new samples are not displayed here. Idem for edition.
         this.getRuns()
       }
@@ -505,6 +510,7 @@ export default defineComponent({
         this.runStore
           .getStudyRuns({ study_id: this.study_public_id })
           .then(() => {
+			this.$emit('updateStudy')  
             this.loading = false
             this.loaded = true
             this.setTableHeaders()

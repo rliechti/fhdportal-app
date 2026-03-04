@@ -150,7 +150,10 @@
                   </p>
                 </template>
               </v-data-table>
-              <p v-else class="text-center"><em>No experiment yet</em></p>
+              <div v-else class="text-center pt-2">
+				  Experiments provide details about the library preparation and sequencing strategy used in the study.<br>
+				  Include information such as sequencing platform, library layout, and experimental protocol.
+			  </div>
 
               <p
                 v-if="
@@ -402,6 +405,7 @@ export default defineComponent({
         this.experimentStore
           .getStudyExperiments({ study_id: this.study_id })
           .then(() => {
+  			this.$emit('updateStudy')  
             this.loaded = true
             this.setTableHeaders()
           })
