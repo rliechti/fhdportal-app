@@ -584,6 +584,7 @@ export default defineComponent({
               type: 'success',
             })
             this.showPolicies[item.id] = false
+            this.getDatasets()
           })
           .catch((err) => {
             this.$notify({ title: err, type: 'danger' })
@@ -602,6 +603,7 @@ export default defineComponent({
               type: 'success',
             })
             this.showPolicies[item.id] = false
+            this.getDatasets()
           })
           .catch((err) => {
             this.$notify({ title: err, type: 'danger' })
