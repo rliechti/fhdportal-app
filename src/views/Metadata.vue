@@ -5,6 +5,12 @@
         <h1 class="text-center">Metadata</h1>
         <v-card min-height="70vh" elevation="0">
           <v-card-text>
+
+		  <div v-if="version==1">
+            <Schemas style="margin: auto; padding: auto" />
+		  </div>
+		  <div v-else>
+		  	
             <v-row>
               <v-col cols="3">
                 <v-toolbar color="light">
@@ -55,6 +61,7 @@
                 </template>
               </v-col>
             </v-row>
+			  </div>
           </v-card-text>
         </v-card>
       </v-container>
@@ -63,6 +70,7 @@
 </template>
 
 <script>
+import Schemas from '@/assets/documentation/Schemas.md'
 import { defineComponent } from 'vue'
 import useClipboard from 'vue-clipboard3'
 import { useSchemaStore } from '@/stores/schemas.js'
@@ -74,9 +82,11 @@ export default defineComponent({
   name: 'MetadataView',
   components: {
     VueJsonPretty,
+	  Schemas
   },
   data() {
     return {
+		version:2,
       activeResource: 'Study',
       activeSchema: 'data_schema',
     }

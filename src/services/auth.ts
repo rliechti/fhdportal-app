@@ -21,7 +21,7 @@ async function init(onInitCallback: () => void): Promise<void> {
   try {
     let initOptions = {
       onLoad: 'check-sso',
-      // scope: 'openid profile roles dac:read dac:write policy:read policy:write submission:read membership:read membership:write dataset:read dac-portal-audience',
+      scope: 'openid profile roles dac:read dac:write policy:read policy:write submission:read submission:write membership:read membership:write dataset:read dac-portal-audience',
       checkLoginIframe: false
       // silentCheckSsoRedirectUri: window.location.origin + "/assets/silent-check-sso.html"
     }
@@ -58,29 +58,39 @@ async function initStore(storeInstance: Store): Promise<void> {
 
 async function refreshToken() {
   try {
-		console.log("updateToken")
     await keycloak.updateToken(30)
     return keycloak
   } catch (error) {
     console.error('Failed to refresh token')
     console.error(error)
+    keycloak.login()
   }
 }
 
 function login(): void {
+  
+  // idpHint is the IDP alias field in Keycloak
+  
   let loginOptions = {
     idpHint: 'switch-fega',
-    // scope: 'openid profile roles dac:read dac:write policy:read policy:write submission:read membership:read membership:write dataset:read dac-portal-audience'
+    scope: 'openid profile roles dac:read dac:write policy:read policy:write submission:read submission:write membership:read membership:write dataset:read dac-portal-audience'
   }
   if (options.url === 'http://0.0.0.0:8080'){
     loginOptions = {
       idpHint: 'switch-fega'
     }
   }
+  else if (options.url.indexOf('biomedit.ch')>-1){
+    loginOptions = {
+      idpHint: 'saml',
+      scope: 'openid profile roles dac:read dac:write policy:read policy:write submission:read submission:write membership:read membership:write dataset:read dac-portal-audience'
+    }
+  }
   keycloak.login(loginOptions)
 }
 
 function logout(url: string): void {
+
   keycloak.logout({ redirectUri: url })
 }
 

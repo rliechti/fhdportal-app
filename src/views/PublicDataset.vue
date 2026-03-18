@@ -15,7 +15,9 @@
         </v-card>
         <v-card v-else>
           <v-card-title>{{dataset.title}}
-          <v-btn size="small" class="mr-3 float-right" color="secondary" @click="downloadDataset(dataset)" >download</v-btn></v-card-title>
+			<!--TODO -->
+          <!-- <v-btn size="small" class="mr-3 float-right" color="secondary" @click="downloadDataset(dataset)">download</v-btn>-->
+		  </v-card-title> 
           <v-card-subtitle>{{dataset.public_id}}</v-card-subtitle>
           <v-card-text>
             <v-row>

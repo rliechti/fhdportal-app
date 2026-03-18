@@ -47,7 +47,7 @@ export default {
         { title: 'macOS (Intel)', value: 'fega-macos-x64' },
         { title: 'macOS (Apple Silicon)', value: 'fega-macos-arm' },
         { title: 'Windows (x64)', value: 'fega-windows.exe' },
-      ]
+      ],
     }
   },
   methods: {

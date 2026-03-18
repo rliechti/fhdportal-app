@@ -1,0 +1,379 @@
+// JSON Forms
+
+.v-toolbar__content {
+    height: 48px !important;
+}
+
+html body .v-theme--light,
+html body .v-theme--dark {
+    --v-disabled-opacity: 1;
+}
+.v-field--disabled {
+    opacity: 1 !important;
+    color: rgba(0, 0, 0, 0.87);
+}
+
+.v-input--horizontal .v-btn.v-btn--icon {
+    border-radius: 0;
+}
+
+.jf-form {
+    .vertical-layout,
+    .horizontal-layout {
+        max-width: none !important;
+        padding: 0 !important;
+    }
+
+    .vertical-layout > .v-row,
+    .horizontal-layout > .v-row {
+        margin: 0 !important;
+    }
+
+    .vertical-layout .v-col.vertical-layout-item {
+        padding: 8px 16px !important;
+    }
+
+    .horizontal-layout > .v-row > .v-col {
+        padding-top: 0 !important;
+        padding-bottom: 0 !important;
+        padding-left: 8px !important;
+        padding-right: 8px !important;
+    }
+    .horizontal-layout > .v-row > .v-col:first-child {
+        padding-left: 0 !important;
+    }
+    .horizontal-layout > .v-row > .v-col:last-child {
+        padding-right: 0 !important;
+    }
+
+    .v-input__details {
+        min-height: 0 !important;
+        padding-top: 2px !important;
+        overflow: visible !important;
+    }
+    .v-messages {
+        min-height: 0 !important;
+        line-height: 1.4 !important;
+    }
+
+    .v-card-actions {
+        padding: 8px 16px 16px !important;
+        justify-content: flex-start !important;
+    }
+
+    .vertical-layout-item .vertical-layout .v-col.vertical-layout-item {
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+    }
+
+    .v-col.vertical-layout-item:has(> .horizontal-layout > .v-row > .v-col > .vertical-layout) {
+        padding-bottom: 0 !important;
+    }
+}
+
+// Global fallback for forms without .jf-form
+.v-col.vertical-layout-item {
+    padding-top: 8px !important;
+    padding-bottom: 8px !important;
+}
+
+// Constrain column gutter override to JSON Forms containers only
+.vertical-layout > .v-row > .v-col,
+.horizontal-layout > .v-row > .v-col {
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+}
+
+// Collapse the always-rendered input details area globally
+.vertical-layout-item .v-input__details,
+.horizontal-layout-item .v-input__details {
+    min-height: 0 !important;
+    padding-top: 2px !important;
+    overflow: visible !important;
+}
+.vertical-layout-item .v-messages,
+.horizontal-layout-item .v-messages {
+    min-height: 0 !important;
+    line-height: 1.4 !important;
+}
+
+// Array-list card
+.array-list.v-card {
+    border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
+    border-radius: 8px !important;
+    overflow: hidden;
+}
+
+// Array-list toolbar
+.array-list-toolbar .v-toolbar-title {
+    margin-inline-start: 0 !important;
+}
+.array-list-toolbar .v-toolbar__content {
+    height: 32px !important;
+    padding: 0 4px 0 12px;
+    overflow: visible !important;
+}
+.array-list-toolbar .v-btn {
+    width: 28px !important;
+    height: 28px !important;
+}
+.array-list-toolbar .v-btn .v-icon {
+    font-size: 18px !important;
+}
+.array-list-toolbar .v-badge {
+    display: inline-flex;
+    align-items: center;
+}
+.array-list-toolbar .v-badge__wrapper {
+    align-items: center;
+}
+.array-list-toolbar .v-badge__wrapper > div {
+    display: flex !important;
+    align-items: center;
+}
+.array-list-toolbar .v-badge__badge {
+    display: none !important;
+}
+.array-list-toolbar .mdi-alert-circle-outline {
+    font-size: 20px !important;
+    width: 20px !important;
+    height: 20px !important;
+}
+
+// Array-list title
+.v-card-title.array-list-title {
+    min-height: 32px;
+    padding: 0 !important;
+    line-height: 1 !important;
+    overflow: visible !important;
+}
+
+.v-card-title.array-list-title:not(:has(.v-toolbar)) {
+    padding: 0 8px 0 12px !important;
+    min-height: 32px;
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px;
+}
+
+.v-card-title.array-list-title:not(:has(.v-toolbar)):has(.v-text-field) {
+    min-height: 52px;
+}
+
+.array-list-label {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    color: rgba(var(--v-theme-on-surface), 0.65);
+}
+
+// Add button for array-list
+.array-list-add,
+.array-list-add .v-icon {
+    color: rgb(var(--v-theme-primary)) !important;
+}
+.array-list-item-delete,
+.array-list-item-delete .v-icon {
+    color: rgb(var(--v-theme-inputBorder)) !important;
+}
+
+// Array-list inner layout
+.array-list .v-card-text {
+    padding: 0 0 8px 0 !important;
+    overflow-x: auto !important;
+}
+
+.array-list .v-card-text > .v-container:not(.array-list-no-data) {
+    padding: 0 !important;
+}
+
+.array-list .v-card-text .v-row {
+    margin: 0 !important;
+}
+
+.array-list .v-table {
+    width: 100%;
+}
+
+// Table header row
+.array-list thead th {
+    padding: 2px 4px !important;
+    font-size: 0.6875rem !important;
+    font-weight: 600 !important;
+    letter-spacing: 0.06em !important;
+    text-transform: uppercase !important;
+    color: rgba(var(--v-theme-on-surface), 0.5) !important;
+    border-bottom: 1px solid rgba(var(--v-border-color), var(--v-border-opacity)) !important;
+    white-space: nowrap;
+}
+
+// Align first column with the toolbar label
+.array-list thead th:first-child {
+    padding-left: 12px !important;
+}
+
+.array-list thead th.fixed-cell-small {
+    width: 44px;
+    min-width: 44px;
+}
+
+// Table body cells
+.array-list tbody tr.array-list-item > td {
+    padding: 8px 4px !important;
+    vertical-align: top !important;
+}
+
+// Align first column with the toolbar label
+.array-list tbody tr.array-list-item > td:first-child {
+    padding-left: 12px !important;
+}
+
+// Compact density for array row inputs
+.array-list tbody tr.array-list-item > td .v-input {
+    --v-input-control-height: 40px;
+    --v-input-padding-top: 8px;
+}
+.array-list tbody tr.array-list-item > td .v-field--variant-outlined,
+.array-list tbody tr.array-list-item > td .v-field--single-line,
+.array-list tbody tr.array-list-item > td .v-field--no-label {
+    --v-field-padding-bottom: 8px;
+}
+
+// Collapse the always-rendered input details area inside array cells
+.array-list tbody tr.array-list-item > td .v-input__details {
+    min-height: 0 !important;
+    padding-top: 0 !important;
+}
+.array-list tbody tr.array-list-item > td .v-messages {
+    min-height: 0 !important;
+}
+
+.array-list tbody tr.array-list-item > td .v-field--variant-outlined {
+    background-color: rgba(0, 0, 0, 0.025) !important;
+}
+
+// Delete button cell
+.array-list tbody tr.array-list-item > td.fixed-cell-small {
+    padding: 10px 4px 8px 4px !important;
+    vertical-align: top !important;
+    width: 44px;
+    min-width: 44px;
+}
+
+// Hide the column header row when the array contains no items.
+.array-list:has(.array-list-no-data) thead {
+    display: none !important;
+}
+
+// Show bottom border on the last data row — only for object-based arrays
+.array-list:has(thead):not(:has(.array-list-no-data)) tbody tr.array-list-item:last-child > td {
+    border-bottom: 1px solid rgba(var(--v-border-color), var(--v-border-opacity)) !important;
+}
+
+// Empty array-list placeholder
+.array-list-no-data {
+    padding: 6px 12px 8px !important;
+    font-size: 0.875rem;
+    color: rgba(var(--v-theme-on-surface), 0.4);
+    font-style: italic;
+}
+
+// MixedRenderer gap
+.prefixed-input {
+    gap: 8px;
+}
+
+// Textarea resize handle
+.jf-form .v-textarea .v-field__clearable,
+.vertical-layout-item .v-textarea .v-field__clearable {
+    display: none !important;
+}
+.jf-form .v-textarea .v-field,
+.vertical-layout-item .v-textarea .v-field {
+    overflow: visible;
+    padding-inline-end: 0 !important;
+}
+
+// Released Date field
+.jf-form .v-input:has(input[id='#/properties/released_date-input']) .v-field {
+    background-color: rgba(255, 200, 0, 0.06) !important;
+}
+.jf-form .v-input:has(input[id='#/properties/released_date-input']) .v-field__outline {
+    --v-field-border-opacity: 1;
+    color: rgba(180, 140, 0, 0.45) !important;
+}
+.jf-form .v-input:has(input[id='#/properties/released_date-input']) .v-field-label {
+    color: rgba(160, 120, 0, 0.75) !important;
+}
+
+// Readonly state
+.jf-form {
+    .v-input--disabled {
+        opacity: 1 !important;
+        pointer-events: none;
+        user-select: none;
+    }
+
+    .v-input--disabled .v-field {
+        background-color: rgb(var(--v-theme-grey100)) !important;
+    }
+
+    .v-input--disabled .v-field__outline {
+        color: rgba(var(--v-theme-inputBorder), 0.5) !important;
+    }
+
+    .v-input--disabled .v-label.v-field-label--floating {
+        color: rgba(var(--v-theme-textPrimary), 0.6) !important;
+        opacity: 1 !important;
+    }
+
+    .v-input--disabled:not(.v-select) .v-field input,
+    .v-input--disabled .v-field textarea {
+        color: rgba(var(--v-theme-textPrimary), 0.75) !important;
+        -webkit-text-fill-color: rgba(var(--v-theme-textPrimary), 0.75) !important;
+        opacity: 1 !important;
+    }
+
+    .v-input--disabled .v-select__selection,
+    .v-input--disabled .v-autocomplete__selection,
+    .v-input--disabled .v-select__selection-text {
+        color: rgba(var(--v-theme-textPrimary), 0.75) !important;
+        opacity: 1 !important;
+    }
+
+    .v-selection-control--disabled {
+        opacity: 1 !important;
+
+        .v-icon {
+            color: rgba(var(--v-theme-textSecondary), 0.6) !important;
+        }
+
+        .v-label {
+            opacity: 0.75 !important;
+            color: rgba(var(--v-theme-textPrimary), 0.75) !important;
+        }
+    }
+
+    .array-list .v-input--disabled .v-field {
+        background-color: rgb(var(--v-theme-grey100)) !important;
+    }
+}
+
+// ResourceListRenderer popup dialog
+.resource-list-popup-content {
+    position: fixed !important;
+    left: 50% !important;
+    top: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    width: max-content !important;
+    max-width: min(990px, 90vw) !important;
+    max-height: 90vh !important;
+    overflow: auto !important;
+}
+
+// ResourceListRenderer per-page dropdown
+.resource-list-per-page-menu .v-list-item-title {
+    font-size: 0.75rem !important;
+    letter-spacing: 0.0333em !important;
+}

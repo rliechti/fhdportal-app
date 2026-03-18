@@ -1,16 +1,16 @@
-import { createVuetify } from 'vuetify';
-import '@mdi/font/css/materialdesignicons.css';
-import * as components from 'vuetify/components';
-import * as directives from 'vuetify/directives';
+import { createVuetify } from 'vuetify'
+import '@mdi/font/css/materialdesignicons.css'
+import * as components from 'vuetify/components'
+import * as directives from 'vuetify/directives'
 //DragScroll
-import { VueDraggableNext } from 'vue-draggable-next';
+import { VueDraggableNext } from 'vue-draggable-next'
 
 // VLabs Components
-import { VTimePicker } from 'vuetify/labs/VTimePicker';
-import { VTreeview } from 'vuetify/labs/VTreeview';
+import { VTimePicker } from 'vuetify/labs/VTimePicker'
+import { VTreeview } from 'vuetify/labs/VTreeview'
 
 // import { BLUE_THEME} from '@/theme/LightTheme';
-import { BLUE_THEME} from '@/theme/LightTheme';
+import { BLUE_THEME } from '@/theme/LightTheme'
 import {
     DARK_BLUE_THEME,
     DARK_AQUA_THEME,
@@ -18,7 +18,7 @@ import {
     DARK_PURPLE_THEME,
     DARK_GREEN_THEME,
     DARK_CYAN_THEME
-} from '@/theme/DarkTheme';
+} from '@/theme/DarkTheme'
 export default createVuetify({
     components: {
         ...components,
@@ -32,7 +32,7 @@ export default createVuetify({
         defaultTheme: 'BLUE_THEME',
         themes: {
             BLUE_THEME,
-           
+
             DARK_BLUE_THEME,
             DARK_AQUA_THEME,
             DARK_ORANGE_THEME,
@@ -43,7 +43,7 @@ export default createVuetify({
     },
     defaults: {
         global: {
-          density: 'comfortable'
+            density: 'comfortable'
         },
         VCard: {
             rounded: 'md'
@@ -63,6 +63,11 @@ export default createVuetify({
             density: 'comfortable',
             color: 'primary'
         },
+        VAutocomplete: {
+            variant: 'outlined',
+            density: 'comfortable',
+            color: 'primary'
+        },
         VListItem: {
             minHeight: '45px'
         },
@@ -70,4 +75,4 @@ export default createVuetify({
             location: 'top'
         }
     }
-});
+})

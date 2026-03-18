@@ -9,7 +9,7 @@ const customizer = useCustomizerStore();
 const showSearch = ref(false);
 const appsdrawer = ref(false);
 const priority = ref(customizer.setHorizontalLayout ? 0 : 0);
-const env = ref(import.meta.env.MODE)
+const env = ref(import.meta.env.VITE_ENVIRONMENT)
 function searchbox() {
     showSearch.value = !showSearch.value;
 }
@@ -34,7 +34,8 @@ watch(priority, (newPriority) => {
             <Menu2Icon size="20" stroke-width="1.5" />
         </v-btn>
         <v-spacer />
-        <p class="text-center text-red" >This is a development instance of the FHDPortal. Data might be erased without warning. Only use dummy data.</p>
+        <p class="text-center text-red" v-if="env ==='dev'" >This is a development instance of the FHDPortal. Data might be erased without warning. Only use dummy data.</p>
+        <p class="text-center text-red" v-else-if="env ==='staging'" >This is a staging instance of the FHDPortal. Data might be erased without warning. Only use dummy data.</p>
 
         <v-spacer />
         <!-- ---------------------------------------------- -->

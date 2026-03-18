@@ -1,13 +1,33 @@
 .v-text-field input {
-  font-size: 0.875rem;
-}
-.v-field__outline {
-  color: rgb(var(--v-theme-inputBorder));
-  --v-field-border-opacity: 1 !important;
-}
-.input {
-  .v-field--variant-outlined {
-    background-color: rgba(0, 0, 0, 0.025);
-  }
+    font-size: 0.875rem;
 }
 
+.v-field--variant-outlined .v-field__outline {
+    color: rgb(var(--v-theme-inputBorder)) !important;
+}
+
+.v-field--variant-outlined.v-field--focused .v-field__outline {
+    color: rgb(var(--v-theme-primary)) !important;
+}
+
+.v-field--variant-outlined.v-field--error:not(.v-field--disabled) .v-field__outline {
+    color: rgb(var(--v-theme-error)) !important;
+}
+
+.v-field--variant-outlined .v-field-label--floating {
+    color: rgba(var(--v-theme-textPrimary), 0.6) !important;
+}
+
+.v-field--variant-outlined.v-field--focused .v-field-label--floating {
+    color: rgb(var(--v-theme-primary)) !important;
+}
+
+.v-field--variant-outlined.v-field--error:not(.v-field--disabled) .v-field-label--floating {
+    color: rgb(var(--v-theme-error)) !important;
+}
+
+.input {
+    .v-field--variant-outlined {
+        background-color: rgba(0, 0, 0, 0.025);
+    }
+}

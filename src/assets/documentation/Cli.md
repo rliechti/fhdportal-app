@@ -29,11 +29,9 @@ chmod +x fega-linux  # or fega-macos-arm
 Recent version of macOS prevents the execution of this unsigned binary. To overcome this limitation run the following command:
 
 ```bash
-xattr -dr com.apple.quarantine fega-macox-x64    # Intel Mac
-xattr -dr com.apple.quarantine fega-macox-arm    # Apple Silicon Mac
+xattr -dr com.apple.quarantine fega-macos-x64    # Intel Mac
+xattr -dr com.apple.quarantine fega-macos-arm    # Apple Silicon Mac
 ```
-
-
 
 2. **Rename for convenience** (optional):
 

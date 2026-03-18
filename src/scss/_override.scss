@@ -21,13 +21,28 @@ html {
     border-color: rgba(var(--v-border-color), 1) !important;
 }
 
-
 .avtar-border {
     border: 2px solid rgb(var(--v-theme-surface)) !important;
 }
 
-.v-dialog{
-    &.dialog-mw{
+.v-dialog {
+    &.dialog-mw {
         max-width: 800px;
+    }
+    &.resource-dialog {
+        width: 95%;
+        max-width: 1100px;
+
+        .v-card {
+            max-height: 90vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden !important;
+        }
+        .modal-body {
+            flex: 1;
+            overflow-y: auto;
+            min-height: 0;
+        }
     }
 }

@@ -32,6 +32,7 @@ export default defineComponent({
 })
 </script>
 
+
 <style>
 .v-theme--light .v-main {
   background-color: #eee;
