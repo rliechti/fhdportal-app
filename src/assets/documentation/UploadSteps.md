@@ -10,5 +10,22 @@
 iT9V6iGJCcS2kCOQtSlVGv3LUGQsDU4lYLi4CL7dJAo=
 -----END CRYPT4GH PUBLIC KEY-----
 ```
-5. Upload your encrypted files in your sFTP inbox (`sftp -P 32222 youremail@sda-inbox-swissfegadev.leomed.ethz.ch`)
-6. Register the submission metadata using this portal.
+
+5. In this demonstrator, encrypted files (*.c4gh) must be manually copied into subdirectories within the `sda-inbox` directory.
+
+6. Create an inbox directory named after your registered email:
+
+```bash
+cd sda-inbox
+mkdir your.email@example.com
+```
+
+7. Copy or move your `*.c4gh` files into this inbox:
+
+```bash
+cd your.email@example.com
+cp ../../fhdportal-example/RCC/files/*.c4gh .
+```
+
+8. A cron job running every minute scans these directories and updates the FHDportal database accordingly. **Wait one minute before proceeding.**
+9. Register the submission metadata using this portal.
