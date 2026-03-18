@@ -48,7 +48,7 @@
               </template>
             </v-row>
             <p class="text-center my-6">
-              <v-btn size="small" color="primary" @click="requestAccessForm(dataset.id, dataset.title)" v-if="dataset.request === undefined || dataset.request === null || dataset.request.dataset_id === undefined">request access...</v-btn>
+              <v-btn size="small" color="primary" @click="requestAccessForm(dataset.public_id, dataset.title)" v-if="dataset.request === undefined || dataset.request === null || dataset.request.dataset_id === undefined">request access...</v-btn>
               <template v-else>
                 <strong :class="dataset.request.request_status==='approved'?'text-success':(dataset.request.request_status==='rejected'?'text-error':'text-info')">Access request {{dataset.request.request_status}} on {{formatDate(dataset.request.action_time)}}</strong>
               </template>
