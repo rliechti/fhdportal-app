@@ -21,7 +21,7 @@ async function init(onInitCallback: () => void): Promise<void> {
   try {
     let initOptions = {
       onLoad: 'check-sso',
-      scope: 'openid profile roles dac:read dac:write policy:read policy:write submission:read submission:write membership:read membership:write dataset:read dac-portal-audience',
+      // scope: 'openid profile roles dac:read dac:write policy:read policy:write submission:read submission:write membership:read membership:write dataset:read dac-portal-audience',
       checkLoginIframe: false
       // silentCheckSsoRedirectUri: window.location.origin + "/assets/silent-check-sso.html"
     }
@@ -73,7 +73,7 @@ function login(): void {
   
   let loginOptions = {
     idpHint: 'switch-fega',
-    scope: 'openid profile roles dac:read dac:write policy:read policy:write submission:read submission:write membership:read membership:write dataset:read dac-portal-audience'
+    // scope: 'openid profile roles dac:read dac:write policy:read policy:write submission:read submission:write membership:read membership:write dataset:read dac-portal-audience'
   }
   if (options.url === 'http://0.0.0.0:8080'){
     loginOptions = {
@@ -83,7 +83,7 @@ function login(): void {
   else if (options.url.indexOf('biomedit.ch')>-1){
     loginOptions = {
       idpHint: 'saml',
-      scope: 'openid profile roles dac:read dac:write policy:read policy:write submission:read submission:write membership:read membership:write dataset:read dac-portal-audience'
+      // scope: 'openid profile roles dac:read dac:write policy:read policy:write submission:read submission:write membership:read membership:write dataset:read dac-portal-audience'
     }
   }
   keycloak.login(loginOptions)
