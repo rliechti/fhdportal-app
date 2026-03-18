@@ -87,12 +87,23 @@
                 <v-container>
                   <v-row>
                     <v-col cols="10">
-                      <v-text-field
-                        v-model="newKey"
-                        :label="`${type.toUpperCase()} public key ${type==='ssh'?'(RSA or ed25519)':''}`"
-                        density="compact"
-                        required
-                      ></v-text-field>
+                      <template v-if="`${type.toUpperCase()=='C4GH'}`">
+                        <v-textarea
+                          v-model="newKey"
+                          :label="`${type.toUpperCase()} public key ${type==='ssh'?'(RSA or ed25519)':''}`"
+                          density="compact"
+                          rows="4"
+                          required
+                        ></v-textarea>
+                      </template>
+                      <template v-else>
+                        <v-text-field
+                          v-model="newKey"
+                          :label="`${type.toUpperCase()} public key ${type==='ssh'?'(RSA or ed25519)':''}`"
+                          density="compact"
+                          required
+                        ></v-text-field>
+                      </template>
                     </v-col>
                     <v-col cols="2">
                       <v-btn
