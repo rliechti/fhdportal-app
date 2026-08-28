@@ -78,7 +78,7 @@ fega template -o templates.zip
 
 ## Example dataset
 
-A mimimal submission dataset can be downloaded from [https://fega-portal-dev.vital-it.ch/fega-test-submission.zip](https://fega-portal-dev.vital-it.ch/fega-test-submission.zip).
+A mimimal submission dataset can be downloaded from [https://fhd-portal-dev.vital-it.ch/fega-test-submission.zip](https://fhd-portal-dev.vital-it.ch/fega-test-submission.zip).
 
 ## Usage
 

@@ -24,7 +24,7 @@ export const useRunStore = defineStore('runs', {
     },
     getStudyRuns(params) {
       return new Promise((resolve, reject) => {
-        HTTP.get('/submissions/' + params.study_id + '/runs')
+        HTTP.get('/submissions/' + encodeURIComponent(params.study_id) + '/runs')
           .then((res) => {
             this.runs = res.data
             resolve(res.data)
@@ -39,7 +39,7 @@ export const useRunStore = defineStore('runs', {
       let promises = []
       _.forEach(params, (p) => {
         const promise = new Promise((resolve, reject) => {
-          HTTP.delete(`/submissions/${p.study_id}/runs/${p.run_id}`)
+          HTTP.delete(`/submissions/${encodeURIComponent(p.study_id)}/runs/${encodeURIComponent(p.run_id)}`)
             .then((res) => {
               const deletedRunId = res.data
               let idx = _.findIndex(this.runs, function (sa) {
@@ -66,9 +66,9 @@ export const useRunStore = defineStore('runs', {
       return new Promise((resolve, reject) => {
         const method = params.run.properties.public_id ? 'put' : 'post'
         const putPath = params.run.properties.public_id
-          ? `/${params.run.properties.public_id}`
+          ? `/${encodeURIComponent(params.run.properties.public_id)}`
           : ''
-        HTTP[method](`/submissions/${params.study_id}/runs${putPath}`, params.run)
+        HTTP[method](`/submissions/${encodeURIComponent(params.study_id)}/runs${putPath}`, params.run)
           .then((res) => {
             let run = res.data
             if (run.action_type_id == 'MOD') {
@@ -92,7 +92,7 @@ export const useRunStore = defineStore('runs', {
     },
     uploadRuns(studyId, formData) {
       return new Promise((resolve, reject) => {
-        HTTP.post(`/submissions/${studyId}/upload-runs`, formData, {
+        HTTP.post(`/submissions/${encodeURIComponent(studyId)}/upload-runs`, formData, {
           headers: {
             'Content-Type': 'multipart/form-data',
           },

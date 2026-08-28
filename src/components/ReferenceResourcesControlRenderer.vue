@@ -65,8 +65,10 @@
                                     <v-chip size="small">
                                         {{ resource[propName.value].length }}
                                         <v-tooltip activator="parent" location="top">
-                                            <span v-html="resource[propName.value].join('<br />')"
-                                        /></v-tooltip>
+                                            <span style="white-space: pre-line">
+                                                {{ resource[propName.value].join('\n') }}
+                                            </span>
+                                        </v-tooltip>
                                     </v-chip>
                                 </template>
                                 <template v-else-if="propName.value === 'title'">
@@ -103,14 +105,11 @@
                                         {{
                                             resource[propName.value].replace(/([^A-Z])/g, '').trim()
                                         }}
-                                        <v-tooltip activator="parent" location="top"
-                                            ><span
-                                                v-html="
-                                                    resource[propName.value]
-                                                        .replace(/([A-Z])/g, ' $1')
-                                                        .trim()
-                                                "
-                                        /></v-tooltip>
+                                        <v-tooltip activator="parent" location="top">
+                                            <span>{{
+                                                formatTooltip(resource[propName.value])
+                                            }}</span>
+                                        </v-tooltip>
                                     </v-chip>
                                 </template>
                                 <template v-else-if="propName.value === 'last_update'">
@@ -127,13 +126,9 @@
                                     <v-chip size="small">
                                         {{ resource.properties[propName.value].length }}
                                         <v-tooltip activator="parent" location="top">
-                                            <span
-                                                v-html="
-                                                    resource.properties[propName.value].join(
-                                                        '<br />'
-                                                    )
-                                                "
-                                            />
+                                            <span style="white-space: pre-line">
+                                                {{ resource.properties[propName.value].join('\n') }}
+                                            </span>
                                         </v-tooltip>
                                     </v-chip>
                                 </template>
@@ -159,7 +154,6 @@
                                         </v-tooltip>
                                     </v-chip>
                                 </template>
-
                                 <template v-else>
                                     {{ resource.properties[propName.value] }}
                                 </template>
@@ -217,11 +211,11 @@ const controlRenderer = defineComponent({
             //   value: 'public_id',
             // },
             {
-                title: 'Last update',
+                title: 'Last Updated',
                 value: 'last_update'
             },
             {
-                title: 'Created by',
+                title: 'Created By',
                 value: 'creator_name'
             }
         ]
@@ -300,6 +294,7 @@ const controlRenderer = defineComponent({
             filter
         }
     },
+
     computed: {
         arraySchema(): JsonSchema | undefined {
             return Resolve.schema(
@@ -343,6 +338,10 @@ const controlRenderer = defineComponent({
                 this.removeItem?.(this.control.path, value)
             }
         },
+        formatTooltip(value) {
+            return value.replace(/([A-Z])/g, ' $1').trim()
+        },
+
         formatDate(value: any) {
             return moment(value).format('DD.MM.YYYY')
         },

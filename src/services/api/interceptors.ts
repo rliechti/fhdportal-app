@@ -7,7 +7,6 @@ const add = (store) => {
         await store.refreshToken()
         config.headers['Authorization'] = 'Bearer ' + store.user.token
         config.headers['x-access-token'] = 'Bearer ' + store.user.token
-        config.headers['X-Forwarded-Prefix'] = '/api'
       }
       return config
     },
@@ -21,8 +20,9 @@ const add = (store) => {
       return response
     },
     async (error) => {
-			console.log('apiService response error')
-			console.log(error)
+      if (import.meta.env.DEV) {
+        console.log('apiService response error', error.response?.status, error.config?.url)
+      }
       const config = error.config
       if (error.response?.status === 401 && !config._retry) {
         config._retry = true
@@ -30,11 +30,11 @@ const add = (store) => {
           await store.refreshToken()
           config.headers['x-access-token'] = 'Bearer ' + store.user.token
           config.headers['Authorization'] = 'Bearer ' + store.user.token
-          config.headers['X-Forwarded-Prefix'] = '/api'
           return apiService(config)
         } catch (_error) {
-          console.error('Refresh token failed')
-          console.error(_error)
+          if (import.meta.env.DEV) {
+            console.error('Refresh token failed', _error.response?.status, _error.config?.url)
+          }
           return Promise.reject(_error)
         }
       }

@@ -1,6 +1,6 @@
 <template>
     <div class="Samples">
-        <v-sheet min-height="70vh" rounded="lg">
+        <component :is="study_public_id ? 'div' : 'v-sheet'" v-bind="study_public_id ? {} : { minHeight: '70vh', rounded: 'lg' }">
             <v-dialog v-model="modal.status" class="resource-dialog">
                 <modal-resource
                     cas="sample"
@@ -14,218 +14,115 @@
                 ></modal-resource>
             </v-dialog>
 
-            <v-container>
-                <h1 v-if="!study_public_id" class="text-center">Samples</h1>
+            <component :is="study_public_id ? 'div' : 'v-container'" v-bind="study_public_id ? {} : { fluid: true }">
+                <PageTitle v-if="!study_public_id" title="Samples" />
                 <p v-if="!loaded || loading" class="text-center mt-3">
                     <em>Loading samples</em> <br />
                     <v-progress-circular color="primary" indeterminate></v-progress-circular>
                 </p>
                 <div v-if="loaded">
                     <div v-if="study_public_id && !loading">
-                        <h3 class="text-center mb-5 d-flex align-center pe-2">
-                            <v-icon icon="mdi-water"></v-icon>&nbsp;{{ samples.length }} Sample<span
-                                v-if="samples.length > 1"
-                                >s</span
-                            >
-                            <span v-if="selectedSamples.length">
-                                - {{ selectedSamples.length }} selected</span
-                            >
-                            <v-spacer></v-spacer>
-                            <v-text-field
-                                v-model="search"
-                                v-if="samples.length"
-                                label="Search"
-                                density="compact"
-                                prepend-inner-icon="mdi-magnify"
-                                variant="outlined"
-                                hide-details
-                                single-line
-                            ></v-text-field>
-                            <template
-                                v-if="
-                                    !deleteSample.status &&
-                                    study.sampleTypes.length &&
-                                    study.current_permission.indexOf('edit') > -1 &&
-                                    (study.status_type_id === 'DRA' ||
-                                        study.status_type_id === 'REV')
-                                "
-                            >
-                                <v-btn
-                                    v-for="sampleType in study.sampleTypes"
-                                    :key="sampleType.resource_type_id"
-                                    variant="flat"
-                                    color="primary"
-                                    class="ml-2"
-                                    @click="createSample(sampleType)"
-                                >
-                                    create new
-                                    {{ sampleType.label.replace(/([A-Z])/g, ' $1').trim() }}...
-                                </v-btn>
-                            </template>
-                        </h3>
-
-                        <!-- height="calc(100vh - 500px)" -->
-                        <v-data-table
-                            fixed-header
-                            height="calc(40vh)"
-                            style="min-height: 300px"
-                            v-if="samples.length"
-                            v-model="selectedSamples"
-                            class="mt-5"
+                        <DataTable
+                            table-id="wizard-samples"
                             :items="samples"
-                            :items-per-page="25"
-                            :footer-props="{
-                                'items-per-page-options': [10, 25, 50, 100, -1]
-                            }"
-                            :item-value="'id'"
-                            :search="search"
-                            :filter-keys="['title']"
                             :headers="sampleTableHeaders"
-                            :hover="true"
+                            v-model:search="search"
+                            :filter-keys="['title']"
+                            v-model:selected="selectedSamples"
                             show-select
-                            density="compact"
+                            item-key="id"
+                            :primary-action="primaryAction"
+                            :primary-action-items="primaryActionItems"
+                            @primary-action="createSample(sampleTypes[0])"
+                            @primary-action-select="
+                                (value) =>
+                                    createSample(sampleTypes.find((t) => t.resource_type_id === value))
+                            "
                         >
-                            <!-- <v-data-table v-model="selectedSamples" :items="samples" :headers="sampleTableHeaders" v-if="samples.length" show-select> -->
+                            <template #selection-actions>
+                                <ConfirmActionButtons
+                                    v-if="canManageSamples"
+                                    :actions="deleteActions()"
+                                    :confirming="deleteSample.status ? 'delete' : null"
+                                    @arm="deleteSamples('init')"
+                                    @confirm="deleteSamples('save')"
+                                    @cancel="deleteSamples('cancel')"
+                                />
+                            </template>
+
+                            <template #item.public_id="{ item }">
+                                <CopyIdCell :value="item.public_id" notify-label="Public Sample ID" />
+                            </template>
                             <template #item.title="{ item }">
-                                {{ item.title }}
-                                <v-chip
+                                <v-btn
                                     variant="text"
-                                    class="text-info"
-                                    @click="copy(item.public_id)"
+                                    color="info"
+                                    class="fega-table-btn"
+                                    @click="editSample(item)"
+                                    >{{ item.title }}</v-btn
                                 >
-                                    <v-icon icon="mdi-information"></v-icon>
-                                    <v-tooltip activator="parent" location="top"
-                                        >{{ item.public_id }}
-                                    </v-tooltip>
-                                </v-chip>
                             </template>
                             <template #item.sample_type="{ value }">
-                                {{ value.replace(/([A-Z])/g, ' $1').trim() }}
+                                {{ humanizeCamelCase(value) }}
                             </template>
-                            <template #item.creation_date="{ value }">
-                                {{ formatDate(value) }}
-                            </template>
-                            <template #item.last_update="{ value }">
-                                {{ formatDate(value) }}
-                            </template>
+                            <template #item.creation_date="{ value }"><DateCell :value="value" /></template>
+                            <template #item.last_update="{ value }"><DateCell :value="value" /></template>
                             <template #item.actions="{ item }">
-                                <p class="text-center" style="white-space: nowrap">
-                                    <v-btn
-                                        :disabled="
-                                            item.current_permission &&
-                                            item.current_permission.indexOf('edit') < 0 &&
-                                            item.current_permission.indexOf('review') < 0
-                                        "
-                                        size="small"
-                                        style="display: inline-flex; margin-bottom: 1px"
-                                        color="info"
-                                        variant="outlined"
-                                        @click="editSample(item)"
-                                        ><v-icon
-                                            class="mr-1"
-                                            :icon="
-                                                item.current_permission.indexOf('edit') < 0 &&
-                                                item.current_permission.indexOf('review') > -1
-                                                    ? 'mdi-eye'
-                                                    : 'mdi-pencil'
-                                            "
-                                        ></v-icon
-                                        >{{
-                                            (item.current_permission.indexOf('edit') < 0 &&
-                                                item.current_permission.indexOf('review') > -1) ||
-                                            study.status_type_id !== 'DRA'
-                                                ? 'review'
-                                                : 'edit'
-                                        }}
-                                    </v-btn>
-                                </p>
-                            </template>
-                            <template #item.creator_name="{ value }">
-                                <v-chip color="blue" size="small">
-                                    {{ value.replace(/([^A-Z])/g, '').trim() }}
-                                    <v-tooltip activator="parent" location="top"
-                                        ><span v-html="value.replace(/([A-Z])/g, ' $1').trim()"
-                                    /></v-tooltip>
-                                </v-chip>
+                                <ResourceActionButton :item="item" :study="study" @click="editSample(item)" />
                             </template>
                             <template #item.status="{ value }">
-                                <v-chip :color="getStatusClass(value)" size="small">{{
-                                    value
-                                }}</v-chip>
+                                <StatusChip :status="value" />
                             </template>
-                        </v-data-table>
 
-                        <div v-else class="text-center pt-2">
-                            <p>
-                                Sample describe the biological origin of the sample, such as the
-                                individual, tissue, or cell line.<br />
-                                Examples: patient blood sample, tumor biopsy, cultured cells,
-                                reference material.
-                            </p>
-                            <p>At least 1 sample required to proceed</p>
-                        </div>
-
-                        <p
-                            v-if="
-                                study.sampleTypes.length &&
-                                study.current_permission.indexOf('edit') > -1 &&
-                                (study.status_type_id === 'DRA' || study.status_type_id === 'REV')
-                            "
-                            class="text-center"
-                        >
-                            <template v-if="selectedSamples.length">
-                                <v-btn
-                                    v-if="!deleteSample.status"
-                                    class="ml-3"
-                                    color="error"
-                                    variant="flat"
-                                    @click="deleteSamples('init')"
-                                    >delete {{ selectedSamples.length }} selected
-                                    <span v-if="selectedSamples.length > 1">Samples</span
-                                    ><span v-else>Sample</span></v-btn
-                                >
-                                <template v-if="deleteSample.status">
-                                    <v-btn
-                                        class="ml-3"
-                                        color="error"
-                                        variant="flat"
-                                        @click="deleteSamples('save')"
-                                        >confirm deletion of {{ selectedSamples.length }}
-                                        <span v-if="selectedSamples.length > 1">Samples</span
-                                        ><span v-else>Sample</span></v-btn
-                                    >
-                                    <v-btn
-                                        class="ml-3"
-                                        color="secondary"
-                                        variant="outlined"
-                                        @click="deleteSamples('cancel')"
-                                        >cancel</v-btn
-                                    >
-                                </template>
+                            <template #no-data>
+                                <div class="text-center pt-2">
+                                    <p>
+                                        Sample describe the biological origin of the sample, such as
+                                        the individual, tissue, or cell line.<br />
+                                        Examples: patient blood sample, tumor biopsy, cultured cells,
+                                        reference material.
+                                    </p>
+                                    <p>At least 1 sample required to proceed</p>
+                                </div>
                             </template>
-                        </p>
+                        </DataTable>
                     </div>
                 </div>
-            </v-container>
-        </v-sheet>
+            </component>
+        </component>
     </div>
 </template>
 
 <script>
 import { defineComponent } from 'vue'
+import { notifyError } from '@/utils/notify'
 import { useSubmissionStore } from '@/stores/submissions.js'
 import { useSampleStore } from '@/stores/samples.js'
 import { useSchemaStore } from '@/stores/schemas.js'
 import ModalResource from '@/components/modalResource.vue'
-import useClipboard from 'vue-clipboard3'
+import PageTitle from '@/components/shared/PageTitle.vue'
+import DataTable from '@/components/shared/DataTable.vue'
+import CopyIdCell from '@/components/shared/datatable/cells/CopyIdCell.vue'
+import StatusChip from '@/components/shared/datatable/cells/StatusChip.vue'
+import DateCell from '@/components/shared/datatable/cells/DateCell.vue'
+import ResourceActionButton from '@/components/shared/datatable/cells/ResourceActionButton.vue'
+import ConfirmActionButtons from '@/components/shared/datatable/cells/ConfirmActionButtons.vue'
+import { fitColumn, dateColumn } from '@/utils/dataTableHeaders'
+import { humanizeCamelCase } from '@/utils/format'
 import { mapState } from 'pinia'
 import _ from 'lodash'
-import moment from 'moment'
 
 export default defineComponent({
     name: 'Samples',
     components: {
-        ModalResource
+        ModalResource,
+        PageTitle,
+        DataTable,
+        CopyIdCell,
+        StatusChip,
+        DateCell,
+        ResourceActionButton,
+        ConfirmActionButtons
     },
     props: ['study_id'],
     data() {
@@ -239,20 +136,14 @@ export default defineComponent({
             loaded: false,
             study_public_id: null,
             sampleTableHeaders: [
-                // {
-                //     title: 'Sample type',
-                //     value: 'sample_type',
-                //                     sortable: true
-                // },
-                // {
-                //     title: 'ID',
-                //     value: 'public_id',
-                //                     sortable: true
-                // },
-                // {
-                // 		title: 'Alias',
-                // 		value: 'alias'
-                // 	},
+                fitColumn({
+                    title: 'ID',
+                    value: 'public_id',
+                    align: 'center',
+                    sortable: true,
+                    headerProps: { class: 'fega-table-cell-compact' },
+                    cellProps: { class: 'fega-table-cell-compact' }
+                }),
                 {
                     title: 'Title',
                     value: 'title',
@@ -261,26 +152,24 @@ export default defineComponent({
                 {
                     title: 'Status',
                     value: 'status',
+                    width: '1%',
                     sortable: true
                 },
-                // {
-                //     title: 'Creation date',
-                //     value: 'creation_date',
-                //                     sortable: true
-                // },
-                {
-                    title: 'Last update',
+                dateColumn({
+                    title: 'Last Updated',
                     value: 'last_update',
                     sortable: true
-                },
+                }),
                 {
-                    title: 'Created by',
+                    title: 'Created By',
                     value: 'creator_name',
+                    width: '1%',
                     sortable: true
                 },
                 {
-                    title: '',
+                    title: 'Actions',
                     value: 'actions',
+                    width: '1%',
                     align: 'center'
                 }
             ],
@@ -292,7 +181,38 @@ export default defineComponent({
         ...mapState(useSubmissionStore, ['study']),
         ...mapState(useSampleStore, ['samples']),
         ...mapState(useSchemaStore, ['schemas']),
-        ...mapState(useSubmissionStore, ['statusTypes'])
+        sampleTypes() {
+            if (this.study.sampleTypes !== undefined) {
+                return this.study.sampleTypes
+            }
+            return []
+        },
+        canManageSamples() {
+            return (
+                this.sampleTypes.length > 0 &&
+                this.study.current_permission.indexOf('edit') > -1 &&
+                (this.study.status_type_id === 'DRA' || this.study.status_type_id === 'REV')
+            )
+        },
+        primaryAction() {
+            if (!this.canManageSamples || this.deleteSample.status) return null
+            if (this.sampleTypes.length === 1) {
+                return {
+                    label: `New ${humanizeCamelCase(this.sampleTypes[0].label)}`,
+                    icon: 'mdi-plus'
+                }
+            }
+            return { label: 'Add New', icon: 'mdi-plus' }
+        },
+        primaryActionItems() {
+            if (!this.canManageSamples || this.deleteSample.status || this.sampleTypes.length <= 1) {
+                return []
+            }
+            return this.sampleTypes.map((t) => ({
+                title: humanizeCamelCase(t.label),
+                value: t.resource_type_id
+            }))
+        }
     },
     watch: {
         study_id(n, o) {
@@ -304,29 +224,24 @@ export default defineComponent({
     mounted() {
         this.submissionStore = useSubmissionStore()
         this.sampleStore = useSampleStore()
-        _.forEach(this.sampleTableHeaders, function (sh) {
-            sh.headerProps = { style: 'font-weight: 600' }
-        })
         this.getStudy()
         this.submissionStore.getStatusTypes()
     },
     methods: {
-        async copy(msg) {
-            const { toClipboard } = useClipboard()
-            try {
-                await toClipboard(msg)
-                this.$notify({
-                    type: 'success',
-                    text: 'Public Sample ID copied to clipboard'
-                })
-            } catch (e) {
-                console.error(e)
-            }
+        humanizeCamelCase,
+        deleteActions() {
+            return [
+                {
+                    key: 'delete',
+                    label: 'Delete',
+                    confirmLabel: 'Confirm Deletion',
+                    color: 'error',
+                    variant: 'flat'
+                }
+            ]
         },
-
         editSample(item) {
             this.sample_type = { name: item.sample_type, label: item.sample_type }
-            // this.getSampleSchemas(item.sample_type);
             let data = JSON.parse(JSON.stringify(item.properties))
             let title =
                 item.current_permission.indexOf('edit') > -1
@@ -373,13 +288,9 @@ export default defineComponent({
                         _this.deleteSample.status = false
                         _this.selectedSamples = []
                     })
-                    .catch((err) => {
+                    .catch(() => {
                         _this.deleteSample.status = false
-                        _this.$notify({
-                            title: err.response.statusText,
-                            text: err.response.data,
-                            type: 'error'
-                        })
+                        notifyError('Failed to delete sample(s). Please try again.')
                     })
             }
         },
@@ -423,12 +334,8 @@ export default defineComponent({
                         this.loading = false
                         this.loaded = true
                     })
-                    .catch((err) => {
-                        this.$notify({
-                            title: err.response.statusText,
-                            text: err.response.data,
-                            type: 'error'
-                        })
+                    .catch(() => {
+                        notifyError('Failed to load samples. Please try again.')
                         this.loading = false
                     })
             } else {
@@ -437,18 +344,8 @@ export default defineComponent({
                     .then(() => {
                         this.loaded = true
                     })
-                    .catch((err) =>
-                        this.$notify({
-                            title: err.response.statusText,
-                            text: err.response.data,
-                            type: 'error'
-                        })
-                    )
+                    .catch(() => notifyError('Failed to load samples. Please try again.'))
             }
-        },
-
-        formatDate(value) {
-            return moment(value).format('DD.MM.YYYY')
         },
 
         getStudy() {
@@ -461,14 +358,6 @@ export default defineComponent({
                     this.study_public_id = this.study.public_id
                     this.getSamples()
                 })
-            }
-        },
-        getStatusClass(status_type) {
-            let idx = _.findIndex(this.statusTypes, (sT) => {
-                return sT.name === status_type
-            })
-            if (idx > -1) {
-                return this.statusTypes[idx].class_name
             }
         }
     }

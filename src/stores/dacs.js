@@ -26,7 +26,7 @@ export const useDacStore = defineStore('dacs', {
     },
     submitRequest (params){
       return new Promise((resolve,reject) => {
-      HTTP.post(`/dacs/${params.dataset_id}/request`,params)
+      HTTP.post(`/dacs/${encodeURIComponent(params.dataset_id)}/request`,params)
         .then((res) => {
           resolve(res.data)
         })
@@ -37,7 +37,7 @@ export const useDacStore = defineStore('dacs', {
     },
     getRequestForm(dataset_id){
       return new Promise ((resolve, reject) => {
-      HTTP.get(`/dacs/${dataset_id}/request-form`)
+      HTTP.get(`/dacs/${encodeURIComponent(dataset_id)}/request-form`)
         .then((res) => {
           resolve(res.data)
         })
@@ -48,8 +48,8 @@ export const useDacStore = defineStore('dacs', {
     },
     getPolicyForm(dataset_id, policy_id, form){
       return new Promise((resolve, reject) => {
-        HTTP.get(`/dacs/${dataset_id}/policies/${policy_id}/${form}`).then(res => {
-          resolve(res.data)
+        HTTP.get(`/dacs/${encodeURIComponent(dataset_id)}/policies/${encodeURIComponent(policy_id)}/${encodeURIComponent(form)}`).then(res => {
+          resolve(res.data.jsonForms)
         }).catch(err => {
           reject(err)
         })

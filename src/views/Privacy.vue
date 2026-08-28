@@ -1,16 +1,20 @@
 <template>
-  <div class="Submission">
-    <v-sheet min-height="70vh" rounded="lg">
-      <v-container>
-        <h1 class="text-center">Privacy</h1>
-      </v-container>
-    </v-sheet>
-  </div>
+    <div class="Submission">
+        <v-sheet min-height="70vh" rounded="lg">
+            <v-container fluid>
+                <PageTitle title="Privacy Policy" />
+            </v-container>
+        </v-sheet>
+    </div>
 </template>
 
 <script>
 import { defineComponent } from 'vue'
+import PageTitle from '@/components/shared/PageTitle.vue'
 export default defineComponent({
-  name: 'Privacy',
+    name: 'Privacy',
+    components: {
+        PageTitle
+    }
 })
 </script>

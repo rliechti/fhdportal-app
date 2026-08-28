@@ -69,6 +69,64 @@ html body .v-theme--dark {
     .v-col.vertical-layout-item:has(> .horizontal-layout > .v-row > .v-col > .vertical-layout) {
         padding-bottom: 0 !important;
     }
+
+    .group.v-card {
+        box-shadow: none !important;
+        border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity)) !important;
+        border-radius: 8px !important;
+        overflow: visible !important;
+        margin: 0 !important;
+    }
+
+    .group-label.v-card-title {
+        font-size: 0.75rem !important;
+        font-weight: 700 !important;
+        letter-spacing: 0.07em !important;
+        text-transform: uppercase !important;
+        line-height: 1.4 !important;
+        min-height: auto !important;
+        padding: 10px 16px 8px !important;
+        color: rgba(var(--v-theme-on-surface), 0.6) !important;
+        border-bottom: 1px solid rgba(var(--v-border-color), var(--v-border-opacity)) !important;
+    }
+
+    .group-item.v-card-text {
+        padding: 0 16px 16px !important;
+    }
+
+    .group-label + .group-item.v-card-text {
+        padding-top: 16px !important;
+    }
+
+    .group-item .text-file-attachment-control,
+    .group-item .attachment-upload-markdown-control,
+    .group-item .binary-file-attachment-control {
+        padding: 0 !important;
+    }
+
+    // Reduce padding for nested groups
+    .group-item > .group.v-card {
+        margin-top: 0 !important;
+        margin-bottom: 0 !important;
+    }
+    .group-item > .group.v-card > .group-item.v-card-text {
+        padding-top: 8px !important;
+        padding-bottom: 8px !important;
+    }
+    .group-item > .group.v-card > .group-label + .group-item.v-card-text {
+        padding-top: 8px !important;
+    }
+
+    // Restore bottom padding for the last content area in nested groups
+    .group-item > .group.v-card > .group-item.v-card-text:last-of-type {
+        padding-bottom: 16px !important;
+    }
+
+    // Make checkboxes compact
+    .v-checkbox .v-selection-control {
+        --v-input-control-height: 32px;
+        min-height: 32px !important;
+    }
 }
 
 // Global fallback for forms without .jf-form

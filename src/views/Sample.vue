@@ -1,9 +1,9 @@
 <template>
   <div class="Sample">
     <v-sheet min-height="70vh" rounded="lg">
-      <v-container>
+      <v-container fluid>
         <p v-if="error" class="text-danger">{{ error }}</p>
-        <h1 class="text-center">Sample</h1>
+        <PageTitle title="Sample" />
       </v-container>
     </v-sheet>
   </div>
@@ -11,11 +11,14 @@
 
 <script>
 import { defineComponent } from 'vue'
+import { notifyError } from '@/utils/notify'
 import { useSampleStore } from '@/stores/samples.js'
+import PageTitle from '@/components/shared/PageTitle.vue'
 
 export default defineComponent({
   name: 'Sample',
   components: {
+    PageTitle,
   },
   data() {
     return {
@@ -36,12 +39,8 @@ export default defineComponent({
         .then(() => {
           this.samples = samples
         })
-        .catch((err) =>
-          this.$notify({
-            title: err.response.statusText,
-            text: err.response.data,
-            type: 'error',
-          }),
+        .catch(() =>
+          notifyError('Failed to load samples. Please try again.'),
         )
     }
   }

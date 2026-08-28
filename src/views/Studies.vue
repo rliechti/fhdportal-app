@@ -1,96 +1,109 @@
 <template>
-  <div class="Studies">
-    <v-sheet min-height="70vh" rounded="lg">
-      <h1 class="text-center pt-10">Studies and Cohorts</h1>
-      <div style="display: flex" class="py-8">
-        <div class="flex-fill w-100">
-          <v-sheet width="80%" style="margin: auto">
-            <v-data-table
-              :loading="loading"
-              :items="studies"
-              :headers="tableHeaders"
-              :search="search"
-              density="compact"
-            >
-              <template v-slot:loading>
-                <v-skeleton-loader type="table-row@10"></v-skeleton-loader>
-              </template>
-              <template #item.public_id="{ value }">
-                <v-btn variant="text" color="info" @click="viewStudy(value)">{{
-                  value
-                }}</v-btn>
-              </template>
-            </v-data-table>
-          </v-sheet>
-        </div>
-      </div>
-    </v-sheet>
-  </div>
+    <div class="Studies">
+        <v-sheet min-height="70vh" rounded="lg">
+            <v-container fluid>
+                <PageTitle title="Studies" />
+
+                <DataTable
+                    table-id="studies"
+                    :loading="loading"
+                    :items="studies"
+                    :headers="tableHeaders"
+                    v-model:search="search"
+                >
+                    <template #item.public_id="{ value }">
+                        <v-btn
+                            variant="text"
+                            color="info"
+                            class="fega-table-btn"
+                            @click="viewStudy(value)"
+                            >{{ value }}</v-btn
+                        >
+                    </template>
+                    <template #item.released_date="{ value }">
+                        <DateCell :value="value" />
+                    </template>
+                </DataTable>
+            </v-container>
+        </v-sheet>
+    </div>
 </template>
 
 <script>
 import { defineComponent } from 'vue'
 import { useStudyStore } from '@/stores/studies.js'
 import { mapState } from 'pinia'
+import { notifyError } from '@/utils/notify'
+import PageTitle from '@/components/shared/PageTitle.vue'
+import DataTable from '@/components/shared/DataTable.vue'
+import DateCell from '@/components/shared/datatable/cells/DateCell.vue'
+import { dateColumn, numericColumn, idColumn } from '@/utils/dataTableHeaders'
 
 export default defineComponent({
-  name: 'Studies',
-  components: {},
-  data() {
-    return {
-      loading: false,
-      search: '',
-      tableHeaders: [
-        {
-          title: 'ID',
-          value: 'public_id',
-        },
-        {
-          title: 'Study',
-          value: 'title',
-          sortable: true,
-        },
-        {
-          title: 'Type',
-          value: 'study_type',
-          sortable: true,
-        },
-        {
-          title: 'Nb datasets',
-          value: 'nb_datasets',
-          sortable: true,
-        },
-        {
-          title: 'Published date',
-          value: 'released_date',
-          sortable: true,
-        },
-      ],
-    }
-  },
-  computed: {
-    ...mapState(useStudyStore, ['studies']),
-  },
-  methods: {
-    viewStudy(studyPublicId) {
-      this.$router.push(`/studies/${studyPublicId}`)
+    name: 'Studies',
+    components: {
+        PageTitle,
+        DataTable,
+        DateCell
     },
-  },
-  mounted() {
-    this.loading = true
-    let store = useStudyStore()
-    store.resetStudies().then(() => {
-      store
-        .getStudies()
-        .then(() => {
-          this.loading = false
+    data() {
+        return {
+            loading: false,
+            search: '',
+            tableHeaders: [
+                idColumn({
+                    title: 'ID',
+                    value: 'public_id',
+                    sortable: true,
+                    hideable: false
+                }),
+                {
+                    title: 'Title',
+                    value: 'title',
+                    sortable: true,
+                    hideable: false
+                },
+                {
+                    title: 'Type',
+                    value: 'study_type',
+                    sortable: true
+                },
+                numericColumn({
+                    title: 'Datasets',
+                    value: 'nb_datasets',
+                    sortable: true
+                }),
+                dateColumn({
+                    title: 'Publication Date',
+                    value: 'released_date',
+                    sortable: true
+                })
+            ]
+        }
+    },
+    computed: {
+        ...mapState(useStudyStore, ['studies'])
+    },
+    methods: {
+        viewStudy(studyPublicId) {
+            this.$router.push(`/studies/${studyPublicId}`)
+        }
+    },
+    mounted() {
+        this.loading = true
+        let store = useStudyStore()
+        store.resetStudies().then(() => {
+            store
+                .getStudies()
+                .then(() => {
+                    this.loading = false
+                })
+                .catch(() => {
+                    notifyError('Failed to load studies. Please try again.')
+                    this.loading = false
+                })
         })
-        .catch((err) => {
-          this.$notify({ title: 'Error', text: err, type: 'error' })
-          this.loading = false
-        })
-    })
-  },
+    }
 })
 </script>
 

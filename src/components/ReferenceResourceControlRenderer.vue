@@ -120,7 +120,6 @@ export default defineComponent({
 
         const getResourceInit = async (value: string): Promise<void> => {
             if (!study?.public_id) return
-
             if (resourceType.value.match(/sample/i)) {
                 resourceStore.value = useSampleStore()
                 storeMethod.value = 'getStudySamples'
@@ -138,12 +137,10 @@ export default defineComponent({
                     ? 'study.analysis_files'
                     : 'study.files'
             }
-
             if (value && storeMethod.value) {
                 inputValue.value = value
                 await getResource()
             }
-
             if (resourceStore.value && resourceItems.value) {
                 resources.value = deepGetByPath(resourceStore.value, resourceItems.value) || []
             }

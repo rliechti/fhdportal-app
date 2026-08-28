@@ -1,6 +1,6 @@
 <template>
     <div class="Experiments">
-        <v-sheet min-height="70vh" rounded="lg">
+        <component :is="study_id ? 'div' : 'v-sheet'" v-bind="study_id ? {} : { minHeight: '70vh', rounded: 'lg' }">
             <v-dialog
                 v-model="modal.status"
                 class="resource-dialog"
@@ -18,212 +18,124 @@
                     @closeModal="close($event)"
                 ></modal-resource>
             </v-dialog>
-            <v-container :fluid="true">
+            <component :is="study_id ? 'div' : 'v-container'" v-bind="study_id ? {} : { fluid: true }">
                 <p v-if="error" class="text-danger">{{ error }}</p>
-                <h1 v-if="!study_id" class="text-center">Experiments</h1>
+                <PageTitle v-if="!study_id" title="Experiments" />
                 <p v-if="!loaded" class="text-center mt-3">
                     <em>Loading experiments...</em> <br />
                     <v-progress-circular color="primary" indeterminate></v-progress-circular>
                 </p>
                 <div v-else>
                     <div v-if="study_id">
-                        <h3 class="text-center mb-5 d-flex align-center pe-2">
-                            <v-icon icon="mdi-eyedropper"></v-icon>&nbsp;{{
-                                experiments.length
-                            }}
-                            Experiment<span v-if="experiments.length > 1">s</span>
-                            <span v-if="selectedExperiments.length">
-                                - {{ selectedExperiments.length }} selected</span
-                            >
-                            <v-spacer></v-spacer>
-                            <v-text-field
-                                v-if="!upload && experiments.length"
-                                v-model="search"
-                                label="Search"
-                                density="compact"
-                                prepend-inner-icon="mdi-magnify"
-                                variant="outlined"
-                                hide-details
-                                single-line
-                            ></v-text-field>
-                            <template
-                                v-if="
-                                    !deleteExperiment.status &&
-                                    (study.status_type_id === 'DRA' ||
-                                        study.status_type_id === 'REV')
-                                "
-                            >
-                                <span
-                                    v-for="type in study.experimentTypes"
-                                    :key="type.resource_type_id"
-                                >
-                                    <v-btn
-                                        variant="flat"
-                                        color="primary"
-                                        class="ml-2"
-                                        @click="createExperiment(type)"
-                                        >create new
-                                        {{ type.label.replace(/([A-Z])/g, ' $1').trim() }}</v-btn
-                                    >
-                                </span>
-                                <!-- <v-btn @click="upload=true" class="ml-3" size="small" color="teal" variant="outlined">upload experiments via file</v-btn> -->
+                        <DataTable
+                            table-id="wizard-experiments"
+                            :items="experimentTableItems"
+                            :headers="tableHeaders"
+                            v-model:search="search"
+                            v-model:selected="selectedExperiments"
+                            show-select
+                            item-key="id"
+                            :primary-action="primaryAction"
+                            :primary-action-items="primaryActionItems"
+                            @primary-action="createExperiment(experimentTypes[0])"
+                            @primary-action-select="
+                                (value) =>
+                                    createExperiment(
+                                        experimentTypes.find((t) => t.resource_type_id === value)
+                                    )
+                            "
+                        >
+                            <template #selection-actions>
+                                <ConfirmActionButtons
+                                    v-if="canManageExperiments"
+                                    :actions="deleteActions()"
+                                    :confirming="deleteExperiment.status ? 'delete' : null"
+                                    @arm="deleteExperiments('init')"
+                                    @confirm="deleteExperiments('save')"
+                                    @cancel="deleteExperiments('cancel')"
+                                />
                             </template>
-                        </h3>
-                        <template v-if="!upload">
-                            <v-data-table
-                                fixed-header
-                                height="calc(40vh)"
-                                style="min-height: 300px"
-                                v-if="experiments.length"
-                                v-model="selectedExperiments"
-                                :items="experimentTableItems"
-                                :items-per-page="25"
-                                :footer-props="{
-                                    'items-per-page-options': [10, 25, 50, 100, -1]
-                                }"
-                                :headers="tableHeaders"
-                                :hover="true"
-                                :search="search"
-                                show-select
-                                density="compact"
-                            >
-                                <template #item.title="{ item }">
-                                    <strong>{{ item.title }}</strong> <br />
-                                    {{ getDescription(item) }}
-                                    <v-chip
-                                        variant="text"
-                                        class="text-info"
-                                        @click="copy(item.public_id)"
-                                    >
-                                        <v-icon icon="mdi-information"></v-icon>
-                                        <v-tooltip activator="parent" location="top"
-                                            >{{ item.public_id }}
-                                        </v-tooltip>
-                                    </v-chip>
-                                </template>
 
-                                <template #item.creation_date="{ value }">
-                                    {{ formatDate(value) }}
-                                </template>
-                                <template #item.last_update="{ value }">
-                                    {{ formatDate(value) }}
-                                </template>
-                                <template #item.creator_name="{ value }">
-                                    <v-chip color="blue" size="small">
-                                        {{ value.replace(/([^A-Z])/g, '').trim() }}
-                                        <v-tooltip activator="parent" location="top"
-                                            ><span v-html="value.replace(/([A-Z])/g, ' $1').trim()"
-                                        /></v-tooltip>
-                                    </v-chip>
-                                </template>
+                            <template #item.public_id="{ item }">
+                                <CopyIdCell :value="item.public_id" />
+                            </template>
+                            <template #item.title="{ item }">
+                                <v-btn
+                                    variant="text"
+                                    color="info"
+                                    class="fega-table-btn"
+                                    @click="editExperiment(item)"
+                                    >{{ item.title }}</v-btn
+                                >
+                            </template>
 
-                                <template #item.actions="{ item }">
-                                    <p class="text-center" style="white-space: nowrap">
-                                        <v-btn
-                                            size="small"
-                                            style="display: inline-flex; margin-bottom: 1px"
-                                            color="primary"
-                                            variant="outlined"
-                                            @click="editExperiment(item)"
-                                            :disabled="
-                                                item.current_permission &&
-                                                item.current_permission.indexOf('edit') < 0 &&
-                                                item.current_permission.indexOf('review') < 0
-                                            "
-                                            ><v-icon
-                                                class="mr-1"
-                                                :icon="
-                                                    item.current_permission.indexOf('edit') < 0 &&
-                                                    item.current_permission.indexOf('review') > -1
-                                                        ? 'mdi-eye'
-                                                        : 'mdi-pencil'
-                                                "
-                                            ></v-icon
-                                            >{{
-                                                (item.current_permission.indexOf('edit') < 0 &&
-                                                    item.current_permission.indexOf('review') >
-                                                        -1) ||
-                                                study.status_type_id !== 'DRA'
-                                                    ? 'review'
-                                                    : 'edit'
-                                            }}</v-btn
-                                        >
-                                    </p>
-                                </template>
-                            </v-data-table>
+                            <template #item.creation_date="{ value }"><DateCell :value="value" /></template>
+                            <template #item.last_update="{ value }"><DateCell :value="value" /></template>
+                            <template #item.actions="{ item }">
+                                <ResourceActionButton
+                                    :item="item"
+                                    :study="study"
+                                    @click="editExperiment(item)"
+                                />
+                            </template>
 
-                            <div v-else class="text-center pt-2">
-                                Experiments provide details about the library preparation and
-                                sequencing strategy used in the study.<br />
-                                Include information such as sequencing platform, library layout, and
-                                experimental protocol.
-                            </div>
-
-                            <p
-                                v-if="
-                                    study !== undefined &&
-                                    study.experimentTypes !== undefined &&
-                                    study.experimentTypes.length
-                                "
-                                class="text-center"
-                            >
-                                <template v-if="selectedExperiments.length">
-                                    <v-btn
-                                        v-if="!deleteExperiment.status"
-                                        class="ml-3"
-                                        color="error"
-                                        variant="flat"
-                                        @click="deleteExperiments('init')"
-                                        >delete {{ selectedExperiments.length }} selected
-                                        <span v-if="selectedExperiments.length > 1"
-                                            >experiments</span
-                                        ><span v-else>experiment</span></v-btn
-                                    >
-                                    <template v-if="deleteExperiment.status">
-                                        <v-btn
-                                            class="ml-3"
-                                            color="error"
-                                            variant="flat"
-                                            @click="deleteExperiments('save')"
-                                            >confirm deletion of {{ selectedExperiments.length }}
-                                            <span v-if="selectedExperiments.length > 1"
-                                                >experiments</span
-                                            ><span v-else>experiment</span></v-btn
-                                        >
-                                        <v-btn
-                                            class="ml-3"
-                                            color="secondary"
-                                            variant="outlined"
-                                            @click="deleteExperiments('cancel')"
-                                            >cancel</v-btn
-                                        >
-                                    </template>
-                                </template>
-                            </p>
-                        </template>
+                            <template #no-data>
+                                <div class="text-center pt-2">
+                                    Experiments provide details about the library preparation and
+                                    sequencing strategy used in the study.<br />
+                                    Include information such as sequencing platform, library layout,
+                                    and experimental protocol.
+                                </div>
+                            </template>
+                        </DataTable>
                     </div>
                 </div>
-            </v-container>
-        </v-sheet>
+            </component>
+        </component>
     </div>
 </template>
 
 <script>
 import { defineComponent } from 'vue'
-import useClipboard from 'vue-clipboard3'
+import { notifyError } from '@/utils/notify'
 import { useSubmissionStore } from '@/stores/submissions.js'
 import { useSampleStore } from '@/stores/samples.js'
 import { useSchemaStore } from '@/stores/schemas.js'
 import { useExperimentStore } from '@/stores/experiments.js'
 import ModalResource from '@/components/modalResource.vue'
+import PageTitle from '@/components/shared/PageTitle.vue'
+import DataTable from '@/components/shared/DataTable.vue'
+import CopyIdCell from '@/components/shared/datatable/cells/CopyIdCell.vue'
+import DateCell from '@/components/shared/datatable/cells/DateCell.vue'
+import ResourceActionButton from '@/components/shared/datatable/cells/ResourceActionButton.vue'
+import ConfirmActionButtons from '@/components/shared/datatable/cells/ConfirmActionButtons.vue'
+import { useResourceTableHeaders } from '@/composables/useResourceTableHeaders'
+import { humanizeCamelCase } from '@/utils/format'
 import { mapState } from 'pinia'
 import _ from 'lodash'
-import moment from 'moment'
 
 export default defineComponent({
     name: 'Experiments',
     components: {
-        ModalResource
+        ModalResource,
+        PageTitle,
+        DataTable,
+        CopyIdCell,
+        DateCell,
+        ResourceActionButton,
+        ConfirmActionButtons
+    },
+    setup() {
+        const { headers: tableHeaders, build: buildTableHeaders } = useResourceTableHeaders({
+            source: 'data_schema.required',
+            isDescription: (label) => label.indexOf('description') > -1,
+            defaultHeaders: [
+                { title: 'Last Updated', value: 'last_update', width: '1%', sortable: true },
+                { title: 'Created By', value: 'creator_name', width: '1%', sortable: true },
+                { title: 'Actions', value: 'actions', width: '1%', align: 'center' }
+            ]
+        })
+        return { tableHeaders, buildTableHeaders }
     },
     data() {
         return {
@@ -233,37 +145,7 @@ export default defineComponent({
             error: '',
             loaded: false,
             study_id: null,
-            // experiments: [],
             uploadedExperiments: [],
-            tableHeaders: [],
-            defaultTableHeaders: [
-                // {
-                //     title: 'ID',
-                //     value: 'public_id',
-                //                     sortable: true
-                // },
-                // {
-                //     title: 'Creation date',
-                //     value: 'creation_date',
-                //                     sortable: true
-                // },
-                {
-                    title: 'Last update',
-                    value: 'last_update',
-                    sortable: true
-                },
-                {
-                    title: 'Created by',
-                    value: 'creator_name',
-                    sortable: true
-                },
-                {
-                    title: '',
-                    value: 'actions'
-                }
-            ],
-            showForm: false,
-            upload: false,
             experiment_type: null,
             deleteExperiment: { status: false },
             data: {},
@@ -284,14 +166,44 @@ export default defineComponent({
                 })
                 return e
             })
+        },
+        experimentTypes() {
+            return this.study?.experimentTypes ?? []
+        },
+        canManageExperiments() {
+            return (
+                this.study.status_type_id === 'DRA' || this.study.status_type_id === 'REV'
+            )
+        },
+        primaryAction() {
+            if (!this.canManageExperiments || !this.experimentTypes.length || this.deleteExperiment.status) {
+                return null
+            }
+            if (this.experimentTypes.length === 1) {
+                return {
+                    label: `New ${humanizeCamelCase(this.experimentTypes[0].label)}`,
+                    icon: 'mdi-plus'
+                }
+            }
+            return { label: 'Add New', icon: 'mdi-plus' }
+        },
+        primaryActionItems() {
+            if (
+                !this.canManageExperiments ||
+                this.deleteExperiment.status ||
+                this.experimentTypes.length <= 1
+            ) {
+                return []
+            }
+            return this.experimentTypes.map((t) => ({
+                title: humanizeCamelCase(t.label),
+                value: t.resource_type_id
+            }))
         }
     },
     mounted() {
         const sampleStore = useSampleStore()
         const submissionStore = useSubmissionStore()
-        _.forEach(this.defaultTableHeaders, function (sh) {
-            sh.headerProps = { style: 'font-weight: 600' }
-        })
         this.experimentStore = useExperimentStore()
         if (this.study) {
             this.study_id = this.study.properties.public_id
@@ -306,21 +218,16 @@ export default defineComponent({
         }
     },
     methods: {
-        async copy(msg) {
-            const { toClipboard } = useClipboard()
-            try {
-                await toClipboard(msg)
-                this.$notify({ type: 'success', text: 'Public ID copied to clipboard' })
-            } catch (e) {
-                console.error(e)
-            }
-        },
-        getDescription(item) {
-            let desc = ''
-            _.forEach(item, (v, k) => {
-                if (k.indexOf('description') > -1) desc = v
-            })
-            return desc
+        deleteActions() {
+            return [
+                {
+                    key: 'delete',
+                    label: 'Delete',
+                    confirmLabel: 'Confirm Deletion',
+                    color: 'error',
+                    variant: 'flat'
+                }
+            ]
         },
         deleteExperiments(action) {
             if (action == 'init' || action == 'cancel') {
@@ -349,13 +256,9 @@ export default defineComponent({
                         this.deleteExperiment.status = false
                         this.selectedExperiments = []
                     })
-                    .catch((err) => {
+                    .catch(() => {
                         this.deleteExperiment.status = false
-                        this.$notify({
-                            title: err.response.statusText,
-                            text: err.response.data,
-                            type: 'error'
-                        })
+                        notifyError('Failed to delete experiment(s). Please try again.')
                     })
             }
         },
@@ -385,11 +288,14 @@ export default defineComponent({
             this.experiment_type = { label: experiment.experiment_type }
             this.getExperimentSchemas(experiment.experiment_type)
             let title =
-                'Update ' +
-                experiment.experiment_type.replace(/([A-Z])/g, ' $1') +
-                " '" +
-                experiment.properties.design_description +
-                "'"
+                experiment.current_permission.indexOf('edit') > -1
+                    ? 'Update'
+                    : 'Review' +
+                      ' ' +
+                      experiment.experiment_type.replace(/([A-Z])/g, ' $1') +
+                      " '" +
+                      experiment.properties.design_description +
+                      "'"
             this.modal = {
                 status: true,
                 title: title,
@@ -401,7 +307,6 @@ export default defineComponent({
                 edit: experiment.public_id,
                 permissions: experiment.current_permission
             }
-            // this.showForm = true
         },
         getExperiments() {
             if (this.study_id) {
@@ -410,72 +315,20 @@ export default defineComponent({
                     .then(() => {
                         this.$emit('updateStudy')
                         this.loaded = true
-                        this.setTableHeaders()
+                        this.buildTableHeaders(this.experiments, 'experiment_type')
                     })
-                    .catch((err) => {
-                        this.$notify({
-                            title: err.response.statusText,
-                            text: err.response.data,
-                            type: 'error'
-                        })
+                    .catch(() => {
+                        notifyError('Failed to load experiments. Please try again.')
                     })
             } else {
                 this.experimentStore
                     .getExperiments()
                     .then(() => {
                         this.loaded = true
-                        this.setTableHeaders()
+                        this.buildTableHeaders(this.experiments, 'experiment_type')
                     })
-                    .catch((err) =>
-                        this.$notify({
-                            title: err.response.statusText,
-                            text: err.response.data,
-                            type: 'error'
-                        })
-                    )
+                    .catch(() => notifyError('Failed to load experiments. Please try again.'))
             }
-        },
-        setTableHeaders() {
-            this.tableHeaders = []
-            let experimentTypes = []
-            _.forEach(this.experiments, (e) => {
-                if (experimentTypes.indexOf(e.experiment_type) === -1) {
-                    experimentTypes.push(e.experiment_type)
-                }
-            })
-            const schemaStore = useSchemaStore()
-            schemaStore.getSchemas().then((schemas) => {
-                _.forEach(experimentTypes, (experimentType) => {
-                    if (schemas[experimentType] !== undefined) {
-                        if (schemas[experimentType].data_schema.required !== undefined) {
-                            _.forEach(schemas[experimentType].data_schema.required, (d) => {
-                                if (this.tableHeaders.indexOf(d) == -1) {
-                                    if (
-                                        d.indexOf('description') === -1 ||
-                                        schemas[experimentType].data_schema.required.indexOf(
-                                            'title'
-                                        ) === -1
-                                    ) {
-                                        this.tableHeaders.push({
-                                            headerProps: { style: 'font-weight: 600' },
-                                            value: d,
-                                            title: (d + '')
-                                                .replace(/_/g, ' ')
-                                                .replace(/^([a-z])|\s+([a-z])/g, function ($1) {
-                                                    return $1.toUpperCase()
-                                                }),
-                                            sortable: true
-                                        })
-                                    }
-                                }
-                            })
-                        }
-                    }
-                })
-                for (let i = 0; i < this.defaultTableHeaders.length; i++) {
-                    this.tableHeaders.push(this.defaultTableHeaders[i])
-                }
-            })
         },
         updateData(event) {
             this.data = event.data
@@ -516,16 +369,9 @@ export default defineComponent({
                         type: 'success'
                     })
                 })
-                .catch((err) => {
-                    this.$notify({
-                        title: err.response.statusText,
-                        text: err.response.data,
-                        type: 'error'
-                    })
+                .catch(() => {
+                    notifyError('Failed to register experiment. Please try again.')
                 })
-        },
-        formatDate(value) {
-            return moment(value).format('DD.MM.YYYY')
         },
         getExperimentSchemas(experiment_type) {
             const schemaStore = useSchemaStore()

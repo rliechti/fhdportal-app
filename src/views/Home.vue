@@ -1,7 +1,7 @@
 <template>
   <v-sheet min-height="70vh" rounded="lg">
-    <v-container class="maxWidth">
-      <h1 class="text-center mb-8">Welcome to the {{country_adjective}} FEGA portal</h1>
+    <v-container fluid class="maxWidth">
+      <PageTitle>Welcome to the {{country_adjective}} FEGA Portal</PageTitle>
       <br />
       <v-card>
         <Home style="padding: 20px 40px" :country_adjective="country_adjective" :country_name="country_name" />
@@ -17,11 +17,13 @@
 import { defineComponent } from 'vue'
 
 import Home from '@/assets/documentation/Home.md'
+import PageTitle from '@/components/shared/PageTitle.vue'
 
 export default defineComponent({
   name: 'App',
   components: {
-      Home
+      Home,
+      PageTitle
   },
   data() {
     return {

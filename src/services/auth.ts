@@ -1,15 +1,13 @@
 import Keycloak from 'keycloak-js'
 
-
-
 interface Store {
-  initOAuth: (keycloak: Keycloak) => void
+    initOAuth: (keycloak: Keycloak) => void
 }
 
 const options = {
-  url: import.meta.env.VITE_KEYCLOAK_URL,
-  clientId: import.meta.env.VITE_KEYCLOAK_CLIENT_ID,
-  realm: import.meta.env.VITE_KEYCLOAK_REALM
+    url: import.meta.env.VITE_KEYCLOAK_URL,
+    clientId: import.meta.env.VITE_KEYCLOAK_CLIENT_ID,
+    realm: import.meta.env.VITE_KEYCLOAK_REALM
 }
 
 const keycloak = new Keycloak(options)
@@ -18,88 +16,89 @@ let authenticated: boolean
 let store: Store | null = null
 
 async function init(onInitCallback: () => void): Promise<void> {
-  try {
-    let initOptions = {
-      onLoad: 'check-sso',
-      // scope: 'openid profile roles dac:read dac:write policy:read policy:write submission:read submission:write membership:read membership:write dataset:read dac-portal-audience',
-      checkLoginIframe: false
-      // silentCheckSsoRedirectUri: window.location.origin + "/assets/silent-check-sso.html"
-    }
-    if (options.url == 'http://0.0.0.0:8080') {
-      initOptions = {
+    try {
+        let initOptions = {
             onLoad: 'check-sso',
-            checkLoginIframe: false
+            scope: 'openid profile roles dac:read dac:write policy:read policy:write submission:read submission:write membership:read membership:write dataset:read dac-portal-audience datarequest:read datarequest:write attachment:read attachment:write consent:write consent:read contract:read contract:write',
+            checkLoginIframe: false,
+            enableLogging: false,
+            pkceMethod: 'S256', // Use PKCE for security
+            flow: 'standard' // Authorization code flow
+
             // silentCheckSsoRedirectUri: window.location.origin + "/assets/silent-check-sso.html"
-      }
+        }
+        if (options.url == 'http://0.0.0.0:8080') {
+            initOptions = {
+                onLoad: 'check-sso',
+                checkLoginIframe: false
+                // silentCheckSsoRedirectUri: window.location.origin + "/assets/silent-check-sso.html"
+            }
+        }
+        authenticated = await keycloak.init(initOptions)
+        onInitCallback()
+    } catch (error) {
+        if (error.error === 'login_required') {
+            keycloak.login()
+        }
+        console.error('Failed to initialize Keycloak')
+        console.error(error)
     }
-    authenticated = await keycloak.init(initOptions)
-    onInitCallback()
-  } catch (error) {
-    if (error.error === 'login_required'){
-      keycloak.login()
-    }
-    console.error('Failed to initialize Keycloak')
-    console.error(error)
-  }
 }
 
 async function initStore(storeInstance: Store): Promise<void> {
-  try {
-    store = storeInstance
-    store.initOAuth(keycloak)
-    if (!authenticated) {
-      // alert('not authenticated')
+    try {
+        store = storeInstance
+        store.initOAuth(keycloak)
+        if (!authenticated) {
+            // alert('not authenticated')
+        }
+    } catch (error) {
+        console.error('Failed to initialize store')
+        console.error(error)
     }
-  } catch (error) {
-    console.error('Failed to initialize store')
-    console.error(error)
-  }
 }
 
-async function refreshToken() {
-  try {
-    await keycloak.updateToken(30)
-    return keycloak
-  } catch (error) {
-    console.error('Failed to refresh token')
-    console.error(error)
-    keycloak.login()
-  }
+async function refreshToken(force = false) {
+    try {
+        await keycloak.updateToken(force ? -1 : 30)
+        return keycloak
+    } catch (error) {
+        console.error('Failed to refresh token')
+        console.error(error)
+        keycloak.login()
+    }
 }
 
 function login(): void {
-  
-  // idpHint is the IDP alias field in Keycloak
-  
-  let loginOptions = {
-    idpHint: 'switch-fega',
-    // scope: 'openid profile roles dac:read dac:write policy:read policy:write submission:read submission:write membership:read membership:write dataset:read dac-portal-audience'
-  }
-  if (options.url === 'http://0.0.0.0:8080'){
-    loginOptions = {
-      idpHint: 'switch-fega'
+    // idpHint is the IDP alias field in Keycloak
+
+    let loginOptions = {
+        idpHint: 'switch-fega',
+        scope: 'openid profile roles dac:read dac:write policy:read policy:write submission:read submission:write membership:read membership:write dataset:read dac-portal-audience datarequest:read datarequest:write attachment:read attachment:write consent:write consent:read contract:read contract:write'
     }
-  }
-  else if (options.url.indexOf('biomedit.ch')>-1){
-    loginOptions = {
-      idpHint: 'saml',
-      // scope: 'openid profile roles dac:read dac:write policy:read policy:write submission:read submission:write membership:read membership:write dataset:read dac-portal-audience'
+    if (options.url === 'http://0.0.0.0:8080') {
+        loginOptions = {
+            idpHint: 'switch-fega'
+        }
+    } else if (options.url.indexOf('biomedit.ch') > -1) {
+        loginOptions = {
+            idpHint: 'saml',
+            scope: 'openid profile roles dac:read dac:write policy:read policy:write submission:read submission:write membership:read membership:write dataset:read dac-portal-audience datarequest:read datarequest:write attachment:read attachment:write consent:write consent:read contract:read contract:write'
+        }
     }
-  }
-  keycloak.login(loginOptions)
+    keycloak.login(loginOptions)
 }
 
 function logout(url: string): void {
-
-  keycloak.logout({ redirectUri: url })
+    keycloak.logout({ redirectUri: url })
 }
 
 const service = {
-  init,
-  initStore,
-  refreshToken,
-  logout,
-  login,
+    init,
+    initStore,
+    refreshToken,
+    logout,
+    login
 }
 
 export default service

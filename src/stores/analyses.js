@@ -24,7 +24,7 @@ export const useAnalysisStore = defineStore('analyses', {
     },
     getStudyAnalyses(params) {
       return new Promise((resolve, reject) => {
-        HTTP.get('/submissions/' + params.study_id + '/analyses')
+        HTTP.get('/submissions/' + encodeURIComponent(params.study_id) + '/analyses')
           .then((res) => {
             this.analyses = res.data
             resolve(res.data)
@@ -38,7 +38,7 @@ export const useAnalysisStore = defineStore('analyses', {
       let promises = []
       _.forEach(params, (p) => {
         const promise = new Promise((resolve, reject) => {
-          HTTP.delete(`/submissions/${p.study_id}/analyses/${p.analysis_id}`)
+          HTTP.delete(`/submissions/${encodeURIComponent(p.study_id)}/analyses/${encodeURIComponent(p.analysis_id)}`)
             .then((res) => {
               const deletedAnalysisId = res.data
               let idx = _.findIndex(this.analyses, function (ana) {
@@ -65,10 +65,10 @@ export const useAnalysisStore = defineStore('analyses', {
       return new Promise((resolve, reject) => {
         const method = params.analysis.properties.public_id ? 'put' : 'post'
         const putPath = params.analysis.properties.public_id
-          ? `/${params.analysis.properties.public_id}`
+          ? `/${encodeURIComponent(params.analysis.properties.public_id)}`
           : ''
         HTTP[method](
-          `/submissions/${params.study_id}/analyses${putPath}`,
+          `/submissions/${encodeURIComponent(params.study_id)}/analyses${putPath}`,
           params.analysis,
         )
           .then((res) => {
@@ -95,7 +95,7 @@ export const useAnalysisStore = defineStore('analyses', {
 
     uploadAnalyses(studyId, formData) {
       return new Promise((resolve, reject) => {
-        HTTP.post(`/submissions/${studyId}/upload-analyses`, formData, {
+        HTTP.post(`/submissions/${encodeURIComponent(studyId)}/upload-analyses`, formData, {
           headers: {
             'Content-Type': 'multipart/form-data',
           },

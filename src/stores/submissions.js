@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import HTTP from '@/services/api'
+import { useAuthStore } from '@/stores/auth'
 import _ from 'lodash'
 
 export const useSubmissionStore = defineStore('submissions', {
@@ -12,22 +13,74 @@ export const useSubmissionStore = defineStore('submissions', {
   }),
   getters: {},
   actions: {
-    uploadStudy(formData) {
-      return new Promise((resolve, reject) => {
-        HTTP.post(`/submissions/upload-study`, formData, {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          },
-        })
-          .then((res) => {
-            resolve(res.data)
-          })
-          .catch((err) => reject(err))
+    // Uses fetch() instead of the axios instance because the endpoint streams
+    // newline-delimited JSON progress events while the upload is processed;
+    // axios/XHR can't expose a response body incrementally in the browser.
+    async uploadStudy(formData, onProgress) {
+      const authStore = useAuthStore()
+      if (authStore.authenticated) {
+        await authStore.refreshToken()
+      }
+
+      // VITE_API_URL may or may not have a trailing slash; avoid a double slash either way
+      // (axios' baseURL joining hides this, but a raw fetch URL doesn't).
+      const apiUrl = `${import.meta.env.VITE_API_URL}`.replace(/\/+$/, '')
+      const response = await fetch(`${apiUrl}/submissions/upload-study`, {
+        method: 'POST',
+        headers: {
+          Authorization: 'Bearer ' + authStore.user.token,
+          'x-access-token': 'Bearer ' + authStore.user.token,
+        },
+        body: formData,
       })
+
+      if (!response.body) {
+        throw new Error('Upload failed: no response body')
+      }
+
+      const reader = response.body.getReader()
+      const decoder = new TextDecoder()
+      let buffer = ''
+      let result = null
+
+      const handleLine = (line) => {
+        if (!line) return
+        const event = JSON.parse(line)
+        if (event.type === 'progress') {
+          if (onProgress) onProgress(event)
+        } else if (event.type === 'result') {
+          result = event.data
+        } else if (event.type === 'error') {
+          throw new Error(event.message || 'Upload failed')
+        }
+      }
+
+      let done = false
+      while (!done) {
+        const chunk = await reader.read()
+        done = chunk.done
+        if (done) break
+        buffer += decoder.decode(chunk.value, { stream: true })
+        let newlineIndex
+        while ((newlineIndex = buffer.indexOf('\n')) >= 0) {
+          const line = buffer.slice(0, newlineIndex).trim()
+          buffer = buffer.slice(newlineIndex + 1)
+          handleLine(line)
+        }
+      }
+      handleLine(buffer.trim())
+
+      if (!response.ok && result === null) {
+        throw new Error(`Upload failed with status ${response.status}`)
+      }
+      if (result === null) {
+        throw new Error('Upload did not return a result')
+      }
+      return result
     },
     deleteStudy(study_id) {
       return new Promise((resolve, reject) => {
-        HTTP.delete('/submissions/' + study_id)
+        HTTP.delete('/submissions/' + encodeURIComponent(study_id))
           .then(() => {
             let deletedStudyId = null
             let idx = _.findIndex(this.studies, function (sa) {
@@ -46,7 +99,7 @@ export const useSubmissionStore = defineStore('submissions', {
     },
     downloadTemplate(cas) {
       return new Promise((resolve, reject) => {
-        HTTP.get('/' + cas + '/template', { responseType: 'arraybuffer' })
+        HTTP.get('/' + encodeURIComponent(cas) + '/template', { responseType: 'arraybuffer' })
           .then((res) => {
             resolve(res)
           })
@@ -55,7 +108,7 @@ export const useSubmissionStore = defineStore('submissions', {
     },
     downloadCli(binaryName) {
       return new Promise((resolve, reject) => {
-        HTTP.get(`/cli/${binaryName}`, { responseType: 'arraybuffer' })
+        HTTP.get(`/cli/${encodeURIComponent(binaryName)}`, { responseType: 'arraybuffer' })
           .then((res) => {
             resolve(res)
           })
@@ -64,7 +117,7 @@ export const useSubmissionStore = defineStore('submissions', {
     },
     downloadStudy(study_id) {
       return new Promise((resolve, reject) => {
-        HTTP.get('/submissions/' + study_id + '/download', {
+        HTTP.get('/submissions/' + encodeURIComponent(study_id) + '/download', {
           responseType: 'arraybuffer',
         })
           .then((res) => {
@@ -74,18 +127,19 @@ export const useSubmissionStore = defineStore('submissions', {
       })
     },
     getRoles() {
-      return new Promise((resolve, reject) => {
-        if (this.roles) {
-          resolve(this.roles)
-        } else {
-          HTTP.get(`/roles`)
-            .then((res) => {
-              this.roles = res.data
-              resolve(res.data)
-            })
-            .catch((err) => reject(err))
-        }
-      })
+      if (this.roles) return Promise.resolve(this.roles)
+      if (this._rolesPromise) return this._rolesPromise
+      this._rolesPromise = HTTP.get(`/roles`)
+        .then((res) => {
+          this.roles = res.data
+          this._rolesPromise = null
+          return res.data
+        })
+        .catch((err) => {
+          this._rolesPromise = null
+          return Promise.reject(err)
+        })
+      return this._rolesPromise
     },
     getStatusTypes() {
       return new Promise((resolve, reject) => {
@@ -103,13 +157,7 @@ export const useSubmissionStore = defineStore('submissions', {
     },
     getUsers(params) {
       return new Promise((resolve, reject) => {
-        let suffix = '',
-          tmp = []
-        _.forEach(params, function (v, p) {
-          tmp.push(p + '=' + v)
-        })
-        suffix = '?' + tmp.join('&')
-        HTTP.get(`/users` + suffix)
+        HTTP.get('/users', { params })
           .then((res) => {
             resolve(res.data)
           })
@@ -118,7 +166,7 @@ export const useSubmissionStore = defineStore('submissions', {
     },
     patchStudy(study_id, patch) {
       return new Promise((resolve, reject) => {
-        HTTP.patch(`/submissions/${study_id}`, patch)
+        HTTP.patch(`/submissions/${encodeURIComponent(study_id)}`, patch)
           .then((res) => {
             if (this.study.id == study_id || this.study.public_id === study_id){
               _.forEach(patch,(v,k) => {
@@ -134,7 +182,7 @@ export const useSubmissionStore = defineStore('submissions', {
     },
     addStudyUser(user) {
       return new Promise((resolve, reject) => {
-        HTTP.post(`/submissions/` + user.study_id + `/users`, user)
+        HTTP.post(`/submissions/` + encodeURIComponent(user.study_id) + `/users`, user)
           .then((res) => {
             resolve(res.data)
           })
@@ -143,7 +191,7 @@ export const useSubmissionStore = defineStore('submissions', {
     },
     deleteStudyUser(user) {
       return new Promise((resolve, reject) => {
-        HTTP.delete(`/submissions/` + user.study_id + `/users/` + user.user_id)
+        HTTP.delete(`/submissions/` + encodeURIComponent(user.study_id) + `/users/` + encodeURIComponent(user.user_id))
           .then((res) => {
             resolve(res.data)
           })
@@ -152,7 +200,7 @@ export const useSubmissionStore = defineStore('submissions', {
     },
     getPubmeds(pmid) {
       return new Promise((resolve, reject) => {
-        HTTP.get(`/pubmeds/${pmid}`)
+        HTTP.get(`/pubmeds/${encodeURIComponent(pmid)}`)
           .then((res) => {
             resolve(res.data)
           })
@@ -167,15 +215,7 @@ export const useSubmissionStore = defineStore('submissions', {
     },
     getStudies(params) {
       return new Promise((resolve, reject) => {
-        let suffix = ''
-        if (params && _.keys(params).length) {
-          suffix += '?'
-          _.forEach(params, function (d, p) {
-            suffix += p + '=' + d + '&'
-          })
-          suffix = suffix.slice(0, -1)
-        }
-        HTTP.get('/submissions' + suffix)
+        HTTP.get('/submissions', { params })
           .then((res) => {
             this.studies = res.data
             resolve(res.data)
@@ -194,10 +234,10 @@ export const useSubmissionStore = defineStore('submissions', {
             access: {},
           })
         } else {
-          if (this.study.id == study_id) {
+          if (this.study.public_id == study_id || this.study.id == study_id) {
             resolve(this.study)
           } else {
-            HTTP.get('/submissions/' + study_id)
+            HTTP.get('/submissions/' + encodeURIComponent(study_id))
               .then((res) => {
                 this.study = res.data
                 resolve(res.data)
@@ -212,7 +252,7 @@ export const useSubmissionStore = defineStore('submissions', {
     // postStudy(study){
     editStudy(study) {
       const method = study.id ? 'put' : 'post'
-      const putPath = study.id ? `/${study.public_id}` : ''
+      const putPath = study.id ? `/${encodeURIComponent(study.public_id)}` : ''
       return new Promise((resolve, reject) => {
         HTTP[method](`/submissions${putPath}`, study)
           .then((res) => {
@@ -250,12 +290,13 @@ export const useSubmissionStore = defineStore('submissions', {
       if (this.study.id === undefined) {
         return
       }
+
       return new Promise((resolve, reject) => {
         if (filetype === 'analysis') {
           if (this.study.analysis_files !== undefined) {
             resolve(this.study.analysis_files)
           } else {
-            HTTP.get(`/submissions/${this.study.public_id}/analysis-files`)
+            HTTP.get(`/submissions/${encodeURIComponent(this.study.public_id)}/analysis-files`)
               .then((res) => {
                 this.study.analysis_files = res.data
                 resolve(res.data)
@@ -268,7 +309,7 @@ export const useSubmissionStore = defineStore('submissions', {
           if (this.study.files !== undefined) {
             resolve(this.study.files)
           } else {
-            HTTP.get(`/submissions/${this.study.public_id}/raw-files`)
+            HTTP.get(`/submissions/${encodeURIComponent(this.study.public_id)}/raw-files`)
               .then((res) => {
                 this.study.files = res.data
                 resolve(res.data)
@@ -289,5 +330,25 @@ export const useSubmissionStore = defineStore('submissions', {
           .catch((err) => reject(err))
       })
     },
+    checkSubmission(study_id) {
+      return new Promise((resolve, reject) => {
+        HTTP.get('/submissions/' + encodeURIComponent(study_id) + '/check')
+          .then((res) => {
+            resolve(res.data)
+          })
+          .catch((err) => reject(err))
+      })
+    },
+    createSubmissionVersion(){
+      return new Promise((resolve,reject) => {
+        HTTP.put(`/submissions/${encodeURIComponent(this.study.public_id)}/version`)
+          .then(res => {
+            this.study.status = "draft"
+            this.study.status_type_id = 'DRA'
+          })
+        resolve(this.study)
+      })
+      
+    }
   },
 })

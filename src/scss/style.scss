@@ -1,3 +1,4 @@
+@import './fonts';
 @import './variables';
 @import 'vuetify/styles.scss';
 @import './override';
@@ -29,6 +30,8 @@
 @import './components/VTextarea';
 @import './components/VTabs';
 @import './components/VTable';
+@import './components/VStepper';
+@import './components/FegaDataTable';
 @import './components/VExpansionpanel';
 @import './components/JsonForms';
 
@@ -36,7 +39,6 @@
 @import 'landingpage/header';
 @import 'landingpage/general';
 
-@import './pages/datatable';
 @import './pages/dashboards';
 @import './pages/editor';
 @import './pages/apps';

@@ -1,78 +1,10 @@
 <template>
   <div class="Submission">
     <v-sheet min-height="70vh" rounded="lg">
-      <v-container style="padding: 0">
-        <h1 class="text-center">Submission Portal</h1>
+      <v-container fluid style="padding: 0">
+        <PageTitle title="My Submissions" />
         <template v-if="user.roles.indexOf('submitter') > -1">
-          <v-alert
-            type="warning"
-            variant="tonal"
-            prominent
-            style="margin: 20px"
-          >
-            <WarningSensitive style="margin: auto; padding: auto" />
-          </v-alert>
-
-          <v-alert
-            style="margin: 20px"
-            closable
-            v-model="alert.steps"
-            color="lightinfo"
-          >
-            <div class="github-markdown-body">
-              <UploadSteps
-                style="margin: auto; padding: auto"
-                :sda_inbox_url="sda_inbox_url"
-                :sda_c4gh_key="sda_c4gh_key"
-                :sda_sftp_port="sda_sftp_port"
-                :style="`color: ${alertTextColor}`"
-              />
-            </div>
-
-            <v-btn
-              variant="text"
-              style="margin-bottom: 5px"
-              color="info"
-              @click="alert.encryption = !alert.encryption"
-              prepend-icon="mdi-information"
-            >
-              <span v-if="alert.encryption">hide</span
-              ><span v-else>show</span> help on file encryption</v-btn
-            >
-            <div class="github-markdown-body">
-              <Encryption
-                v-if="alert.encryption"
-                style="margin: auto; padding: auto"
-                :style="`color: ${alertTextColor}`"
-              />
-            </div>
-          </v-alert>
-
-          <p class="text-left ml-4" v-if="!alert.steps">
-            <v-btn
-              variant="text"
-              color="info"
-              size=""
-              @click="alert.steps = !alert.steps"
-              prepend-icon="mdi-help-circle"
-              >Help dataset submission</v-btn
-            >
-          </p>
-          <user-keys type="ssh"></user-keys>
-
           <study-list from="submission"></study-list>
-
-          <p class="text-center">
-            <v-btn
-              class="bg-primary"
-              @click="openNewStudy"
-              v-if="user.sshPublicKeys.length"
-              >submit a new study</v-btn
-            >
-            <v-alert type="info" v-else
-              >Please first upload a public SSH key</v-alert
-            >
-          </p>
         </template>
         <template v-else>
           <h3 class="text-center my-10">
@@ -171,50 +103,28 @@
 
 <script>
 import HTTP from '@/services/api'
+import { notifyError } from '@/utils/notify'
 import { defineComponent } from 'vue'
 import { useAuthStore } from '@/stores/auth.ts'
 import { useSubmissionStore } from '@/stores/submissions.js'
 import StudyList from '@/views/StudyList.vue'
-import UserKeys from '@/components/UserKeys.vue'
+import PageTitle from '@/components/shared/PageTitle.vue'
 import { mapState } from 'pinia'
-import Encryption from '@/assets/documentation/Encryption.md'
-import SshKey from '@/assets/documentation/SshKey.md'
-import UploadSteps from '@/assets/documentation/UploadSteps.md'
-import WarningSensitive from '@/assets/documentation/WarningSensitive.md'
-import { useTheme } from 'vuetify'
 import moment from 'moment'
-import '@/assets/styles/github.css'
 export default defineComponent({
   name: 'Submission',
   components: {
-    UserKeys,
     StudyList,
-    Encryption,
-    SshKey,
-    UploadSteps,
-    WarningSensitive,
+    PageTitle,
   },
   data() {
     return {
-      alert: {
-        steps: true,
-        sshkey: false,
-        encryption: false,
-      },
       dtpa: {},
       displayRequestForm: false,
-      sda_inbox_url: import.meta.env.VITE_SDA_INBOX_URL,
-      sda_c4gh_key: import.meta.env.VITE_SDA_C4GH_KEY,
-      sda_sftp_port: import.meta.env.VITE_SDA_SFTP_PORT,
     }
   },
   computed: {
     ...mapState(useAuthStore, ['user']),
-    ...mapState(useSubmissionStore, ['studies']),
-    alertTextColor() {
-      const theme = useTheme()
-      return theme.name.value.indexOf('DARK') > -1 ? '#BBF' : '#55B'
-    }
   },
   methods: {
     formatDate(value) {
@@ -249,21 +159,14 @@ export default defineComponent({
         })
         .catch((err) => {
           console.info(err)
-          _this.$notify({
-            title: err.response.statusText,
-            text: err.response.data,
-            type: 'error',
-          })
+          notifyError('Failed to download template. Please try again.')
         })
     },
-    openNewStudy() {
-      let route = '/submissions/new'
-      this.$router.push(route)
-    },
     requestSubmission() {
+      // The endpoint is the submitter-role request endpoint; the role is implied by
+      // the route and must be decided server-side, not asserted by the client.
       let formData = new FormData()
       formData.append('dtpa', this.dtpa)
-      formData.append('role', 'submitter')
       HTTP.post('/users/request', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
@@ -273,21 +176,10 @@ export default defineComponent({
           this.$notify({ title: 'Request sent Successfully', type: 'success' })
           this.getDTPA()
         })
-        .catch((err) => {
-          this.$notify({
-            title: err.response.statusText,
-            text: err.response.data.detail,
-            type: 'error',
-          })
+        .catch(() => {
+          notifyError('Failed to send submission request. Please try again.')
         })
     },
-  },
-  watch: {
-    studies (n,o){
-      if ((o.length === 0 || o.length === n.length) && n.length > 0){
-        this.alert.steps = false
-      }
-    }
   },
   mounted() {
     if (this.user.roles.indexOf('submitter') === -1) {

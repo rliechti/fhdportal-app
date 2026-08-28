@@ -30,18 +30,47 @@
                                         label="Upload one zip file..."
                                         @change="uploadAction"
                                     ></v-file-input>
-                                    <div class="text-center">
-                                        <v-progress-circular
-                                            color="primary"
-                                            indeterminate
-                                            v-if="filesUploading"
+                                    <v-card
+                                        v-if="filesUploading"
+                                        variant="tonal"
+                                        :color="uploadProgressColor"
+                                        rounded="lg"
+                                        class="pa-4 mt-4 mx-auto upload-progress-card"
+                                        max-width="420"
+                                    >
+                                        <div class="d-flex align-center justify-center mb-3">
+                                            <v-icon
+                                                :icon="uploadProgressIcon"
+                                                :color="uploadProgressColor"
+                                                size="24"
+                                                class="mr-2"
+                                            ></v-icon>
+                                            <span class="text-subtitle-1 font-weight-medium">{{
+                                                uploadProgressTitle
+                                            }}</span>
+                                        </div>
+                                        <v-progress-linear
+                                            :indeterminate="!uploadProgressIsDeterminate"
+                                            :model-value="uploadProgressIsDeterminate ? uploadProgressPercent : 0"
+                                            :color="uploadProgressColor"
+                                            :bg-opacity="0.25"
+                                            height="22"
+                                            rounded
                                         >
-                                        </v-progress-circular>
-                                    </div>
+                                            <template v-if="uploadProgressIsDeterminate" #default>
+                                                <strong class="upload-progress-nums text-white">{{ uploadProgressPercent }}%</strong>
+                                            </template>
+                                        </v-progress-linear>
+                                        <p class="text-caption text-medium-emphasis mt-2 mb-0 upload-progress-nums">
+                                            {{ uploadProgressSubtitle }}
+                                        </p>
+                                    </v-card>
                                 </div>
                                 <div v-else>
                                     <div v-if="!uploadedResources.success" class="px-5">
-                                        <p class="bg-red my-3 text-center">File upload fail</p>
+                                        <v-alert type="error" variant="tonal" density="compact" class="my-3">
+                                            File upload fail
+                                        </v-alert>
                                         <p>{{ uploadedResources.message }}</p>
 
                                         <v-row>
@@ -135,9 +164,9 @@
                                         </v-row>
                                     </div>
                                     <div v-else>
-                                        <p class="bg-green mt-3 text-center">
+                                        <v-alert type="success" variant="tonal" density="compact" class="mt-3">
                                             File uploaded successfully
-                                        </p>
+                                        </v-alert>
                                         <v-tabs
                                             v-if="uploadedResources.success"
                                             v-model="uploadedResources.nav"
@@ -152,15 +181,15 @@
                                                 >{{ key }}</v-tab
                                             >
                                         </v-tabs>
-                                        <v-data-table
+                                        <DataTable
                                             v-if="uploadedResources.success"
                                             :items="
                                                 uploadedResources.data[uploadedResources.nav]
                                                     .resources
                                             "
                                             :headers="batchUploadHeaders(uploadedResources.nav)"
-                                            density="compact"
-                                            hover
+                                            :show-search="false"
+                                            :show-columns-menu="false"
                                         >
                                             <template #item.action_type_id="{ item }">
                                                 <span class="text-uppercase"
@@ -180,7 +209,7 @@
                                                     ></v-chip>
                                                 </span>
                                             </template>
-                                        </v-data-table>
+                                        </DataTable>
                                     </div>
                                 </div>
                             </v-col>
@@ -221,64 +250,118 @@
                     </p>
                 </v-card>
             </v-dialog>
-            <v-container v-if="study">
-                <v-btn class="float-right ml-2" color="grey-lighten-4" @click="downloadStudy()"
+            <v-container fluid v-if="study">
+                <v-btn class="float-right ml-2" color="grey-lighten-4" @click="downloadStudy()" v-if="study.id"
                     >Download Study</v-btn
                 >
                 <permissions v-model:study.access="study"></permissions>
-                <h2 v-if="study.id" class="text-center">Study "{{ study.title }}"</h2>
-                <h2 v-else class="text-center">New study</h2>
+                <PageTitle v-if="study.id">Study "{{ study.title }}"</PageTitle>
+                <PageTitle v-else>New Study</PageTitle>
 
-                <v-stepper non-linear :model-value="step" class="mt-10">
-                    <v-stepper-header>
-                        <template v-for="(idx, name) in steps" :key="`newStudy${idx}`">
-                            <v-stepper-item
-                                :edit-icon="null"
-                                :value="getStepperValue(name)"
-                                :editable="study.id !== undefined && study.id !== null"
-                                :color="colorBar(idx)"
-                                @click="changeStep(name)"
-                            >
-                                {{ name }}
-                            </v-stepper-item>
-                            <v-divider></v-divider>
+                <div class="submission-stepper-bar">
+                    <v-tooltip text="Go back" location="top">
+                        <template #activator="{ props }">
+                            <v-btn
+                                v-show="step > 1"
+                                v-bind="props"
+                                icon="mdi-chevron-left"
+                                variant="text"
+                                size="large"
+                                class="submission-stepper-arrow"
+                                @click="changeStep(null, step - 1)"
+                            />
                         </template>
-                    </v-stepper-header>
-                </v-stepper>
-                <v-alert
-                    style="margin-top: 10px"
-                    type="warning"
-                    variant="tonal"
-                    density="compact"
-                    prominent
+                    </v-tooltip>
+
+                    <v-stepper non-linear :model-value="step" flat class="submission-stepper">
+                        <v-stepper-header>
+                            <v-divider></v-divider>
+                            <template v-for="(idx, name) in steps" :key="`newStudy${idx}`">
+                                <v-stepper-item
+                                    :value="idx"
+                                    :editable="isStepEditable(name)"
+                                    :complete="isStepComplete(name)"
+                                    :color="stepColor(name)"
+                                    @click="changeStep(name)"
+                                >
+                                    <template #icon>
+                                        <span v-if="hasStepCount(name)">{{ stepCount(name) }}</span>
+                                        <v-icon v-else-if="isStepComplete(name)" icon="mdi-check"></v-icon>
+                                        <v-icon
+                                            v-else-if="step === idx && isStepEditable(name)"
+                                            icon="mdi-pencil"
+                                        ></v-icon>
+                                        <v-icon v-else icon="mdi-check"></v-icon>
+                                    </template>
+                                    <span :class="{ 'font-weight-bold text-decoration-underline': step === idx }">{{
+                                        name
+                                    }}</span>
+                                </v-stepper-item>
+                                <v-divider></v-divider>
+                            </template>
+                        </v-stepper-header>
+                    </v-stepper>
+
+                    <v-tooltip text="Next" location="top">
+                        <template #activator="{ props }">
+                            <span v-bind="props" class="submission-stepper-arrow-wrap">
+                                <v-btn
+                                    v-if="step < steps.submission"
+                                    icon="mdi-chevron-right"
+                                    variant="text"
+                                    size="large"
+                                    class="submission-stepper-arrow"
+                                    :disabled="!canGoNext"
+                                    @click="goNext"
+                                />
+                            </span>
+                        </template>
+                    </v-tooltip>
+                </div>
+                <v-divider class="submission-stepper-divider"></v-divider>
+                <div v-if="step == steps.acknowledgment" class="submission-start-row">
+                    <v-checkbox
+                        v-model="sensitiveDataChecked"
+                        :disabled="hasStartedThisSubmission"
+                        label="I have read and I accept the notice below"
+                        hide-details
+                        class="flex-grow-0"
+                    ></v-checkbox>
+                    <v-btn
+                        v-if="!hasStartedThisSubmission"
+                        color="primary"
+                        :disabled="!canProceedFromSubmission"
+                        @click="changeStep('study')"
+                    >
+                        Next
+                    </v-btn>
+                </div>
+                <p
+                    v-if="step == steps.acknowledgment && !hasSshKey && !hasStartedThisSubmission"
+                    class="text-right text-caption text-medium-emphasis"
                 >
-                    <WarningSensitive />
-                </v-alert>
-                <div class="mt-10" style="margin-top: 20px !important">
-                    <p style="margin-bottom: 10px">
-                        <span style="color: white">t</span>
-                        <v-btn
-                            v-show="step > 1"
-                            color="orange-lighten-5"
-                            prepend-icon="mdi-chevron-left"
-                            @click="changeStep(null, step - 1)"
-                            >go back</v-btn
-                        >
-                        <v-btn
-                            v-if="step < 6 && study.public_id"
-                            color="orange-lighten-5"
-                            class="float-right"
-                            append-icon="mdi-chevron-right"
-                            @click="changeStep(null, step + 1)"
-                            >next</v-btn
-                        >
-                    </p>
-
-                    <div v-if="step == 1">
-                        <p v-if="study.status_type_id == 'PUB'" class="bg-green text-center">
-                            Study published on {{ formatDate(study.released_date) }}
+                    You need to register an SSH key before continuing.
+                </p>
+                <div class="submission-content">
+                    <div v-if="step == steps.acknowledgment">
+                        <submission-info-tab
+                            v-if="studiesLoaded"
+                            :has-ssh-key="hasSshKey"
+                            :default-info-expanded="defaultInfoExpanded"
+                            :show-quick-start="hasAnySubmissionCompleted"
+                            :submitted="hasSubmittedThisSubmission"
+                            :sda-inbox-url="sda_inbox_url"
+                            :sda-inbox-ip="sda_inbox_ip"
+                            :sda-c4gh-key="formattedSdaC4ghKey"
+                            :sda-sftp-port="sda_sftp_port"
+                            :email="user.email"
+                        ></submission-info-tab>
+                        <p v-else class="text-center">
+                            <v-progress-circular indeterminate color="primary"></v-progress-circular>
                         </p>
+                    </div>
 
+                    <div v-if="step == steps.study">
                         <v-tabs
                             v-if="!study.public_id"
                             v-model="nav"
@@ -290,7 +373,8 @@
                                 >Full submission with study package</v-tab
                             >
                         </v-tabs>
-                        <v-card v-if="nav == 'form'" id="studyForm" class="jf-form">
+                        <v-card v-if="nav == 'form'" id="studyForm" class="jf-form" flat>
+                        <!-- <pre>{{study}}</pre> -->
                             <json-forms
                                 :data="data"
                                 :schema="data_schema"
@@ -350,36 +434,49 @@
                                     v-else-if="
                                         study.current_permission.indexOf('edit') > -1 &&
                                         study.status_type_id !== 'SUB' &&
+                                        study.status_type_id !== 'RES' &&
+                                        study.status_type_id !== 'APR' &&
                                         study.status_type_id !== 'PUB'
                                     "
                                     class="text-center"
                                 >
-                                    <v-btn color="primary" variant="flat" @click="showForm = true"
-                                        >Edit</v-btn
-                                    >
-                                </p>
-                            </v-card-actions>
+                                    <v-btn color="primary" variant="flat" @click="showForm = true">
+                                      Edit
+                                    </v-btn>
+                                  </p>
+                                  <!-- <p v-else-if="study.status_type_id === 'PUB'">
+                                    <v-btn color="primary" variant="flat" @click="createNewVersion">Create a new version</v-btn>
+                                  </p>                                 -->
+                                  <p v-else-if="study.status_type_id === 'APR'" class="text-info">
+                                    Submission waiting to be approved by the Help Desk team.
+                                  </p>                                
+                              </v-card-actions>
                         </v-card>
                     </div>
 
-                    <div v-if="step == 2">
+                    <div v-if="step == steps.samples">
                         <samples :study_id="study.id" @updateStudy="getStudy()"></samples>
                     </div>
-                    <div v-if="step == 3">
+                    <div v-if="step == steps.experiments">
                         <experiments :study_id="study.id" @updateStudy="getStudy()"></experiments>
                     </div>
-                    <div v-if="step == 4">
+                    <div v-if="step == steps.runs">
                         <runs :study_id="study.id" @updateStudy="getStudy()"></runs>
                     </div>
-                    <div v-if="step == 5">
+                    <div v-if="step == steps.analyses">
                         <analyses :study_id="study.id" @updateStudy="getStudy()"></analyses>
                     </div>
-                    <div v-if="step == 6">
+                    <div v-if="step == steps.datasets">
                         <datasets
                             :study_id="study.id"
-                            @submitStudy="submitStudy()"
                             @updateStudy="getStudy()"
                         ></datasets>
+                    </div>
+                    <div v-if="step == steps.submission">
+                        <submission-final-step
+                            :study_id="study.id"
+                            @updateStudy="getStudy()"
+                        ></submission-final-step>
                     </div>
                 </div>
             </v-container>
@@ -389,11 +486,13 @@
 
 <script>
 import { defineComponent } from 'vue'
+import { notifyError } from '@/utils/notify'
 import { JsonForms } from '@jsonforms/vue'
 import { vuetifyRenderers, mergeStyles, defaultStyles } from '@jsonforms/vue-vuetify'
 import { useSubmissionStore } from '@/stores/submissions.js'
 import { useSampleStore } from '@/stores/samples.js'
 import { useSchemaStore } from '@/stores/schemas.js'
+import { useAuthStore } from '@/stores/auth.ts'
 import IdentifierControlRenderer from '@/components/IdentifierControlRenderer.vue'
 import IdentifierControlTester from '@/testers/IdentifierControlTester.js'
 import NumberControlRenderer from '@/components/NumberControlRenderer.vue'
@@ -404,11 +503,13 @@ import Datasets from '@/views/Datasets.vue'
 import Runs from '@/views/Runs.vue'
 import Analyses from '@/views/Analyses.vue'
 import Permissions from '@/views/Permissions.vue'
-import moment from 'moment'
+import SubmissionFinalStep from '@/views/SubmissionFinalStep.vue'
 import _ from 'lodash'
 import { mapState } from 'pinia'
 import StudyUpload from '@/assets/documentation/StudyUpload.md'
-import WarningSensitive from '@/assets/documentation/WarningSensitive.md'
+import PageTitle from '@/components/shared/PageTitle.vue'
+import SubmissionInfoTab from '@/views/SubmissionInfoTab.vue'
+import DataTable from '@/components/shared/DataTable.vue'
 
 const renderers = [
     ...vuetifyRenderers,
@@ -440,7 +541,10 @@ export default defineComponent({
         Analyses,
         Datasets,
         StudyUpload,
-        WarningSensitive
+        PageTitle,
+        SubmissionInfoTab,
+        SubmissionFinalStep,
+        DataTable
     },
     data() {
         return {
@@ -449,23 +553,18 @@ export default defineComponent({
             delete_study: false,
             modal: { status: false },
             filesUploading: false,
+            uploadProgress: { phase: null, current: 0, total: 0, resource_type: null },
             uploadedResources: { nav: 'study', success: false, data: null, loaded: false },
             steps: {
-                study: 1,
-                samples: 2,
-                experiments: 3,
-                runs: 4,
-                analyses: 5,
-                datasets: 6
+                acknowledgment: 1,
+                study: 2,
+                samples: 3,
+                experiments: 4,
+                runs: 5,
+                analyses: 6,
+                datasets: 7,
+                submission: 8
             },
-            // steps: {
-            //   study: 0,
-            //   samples: 1,
-            //   experiments: 2,
-            //   runs: 3,
-            //   analyses: 4,
-            //   datasets: 5,
-            // },
             step: 1,
             sampleStore: null,
             error: '',
@@ -476,25 +575,121 @@ export default defineComponent({
             ui_schema: null,
             showForm: true,
             renderers: Object.freeze(renderers),
-            data: {}
+            data: {},
+            sensitiveDataAcceptedThisSession: false,
+            studiesLoaded: false,
+            initialStepResolved: false,
+            sda_inbox_url: import.meta.env.VITE_SDA_INBOX_URL,
+            sda_inbox_ip: import.meta.env.VITE_SDA_INBOX_IP,
+            sda_c4gh_key: import.meta.env.VITE_SDA_C4GH_KEY,
+            sda_sftp_port: import.meta.env.VITE_SDA_SFTP_PORT
         }
     },
     computed: {
         ...mapState(useSubmissionStore, ['studies']),
         ...mapState(useSchemaStore, ['schemas']),
+        ...mapState(useAuthStore, ['user']),
         readonly() {
             return (
                 this.study.current_permission !== undefined &&
                 this.study.current_permission.indexOf('edit') === -1
             )
+        },
+        uploadProgressPercent() {
+            if (!this.uploadProgress.total) return 0
+            return Math.round((this.uploadProgress.current / this.uploadProgress.total) * 100)
+        },
+        uploadProgressIsDeterminate() {
+            return this.uploadProgress.phase === 'importing' || this.uploadProgress.phase === 'done'
+        },
+        uploadProgressColor() {
+            if (this.uploadProgress.phase === 'done') return 'success'
+            if (this.uploadProgress.phase === 'importing') return 'primary'
+            return 'info'
+        },
+        uploadProgressIcon() {
+            if (this.uploadProgress.phase === 'done') return 'mdi-check-circle'
+            if (this.uploadProgress.phase === 'importing') return 'mdi-database-import-outline'
+            return 'mdi-file-search-outline'
+        },
+        uploadProgressTitle() {
+            if (this.uploadProgress.phase === 'done') return 'Import complete'
+            if (this.uploadProgress.phase === 'importing') return 'Importing data'
+            return 'Validating file(s)'
+        },
+        uploadProgressSubtitle() {
+            if (this.uploadProgress.phase === 'done') {
+                const n = this.uploadProgress.total
+                return `${n} row${n === 1 ? '' : 's'} imported`
+            }
+            if (this.uploadProgress.phase === 'importing') {
+                return this.uploadProgress.resource_type
+                    ? `${this.uploadProgress.resource_type}: ${this.uploadProgress.current} / ${this.uploadProgress.total}`
+                    : `${this.uploadProgress.current} / ${this.uploadProgress.total}`
+            }
+            return 'Checking structure and content against the schema...'
+        },
+        hasSshKey() {
+            return this.user.sshPublicKeys && this.user.sshPublicKeys.length > 0
+        },
+        hasStartedThisSubmission() {
+            return !!(this.study && this.study.public_id)
+        },
+        hasSubmittedThisSubmission() {
+            return !!(this.study && ['SUB', 'RES', 'APR', 'PUB'].includes(this.study.status_type_id))
+        },
+        hasAcceptedSensitiveData() {
+            return this.hasStartedThisSubmission || this.sensitiveDataAcceptedThisSession
+        },
+        canProceedFromSubmission() {
+            return this.hasSshKey && this.hasAcceptedSensitiveData
+        },
+        canGoNext() {
+            if (this.step === this.steps.acknowledgment) return this.canProceedFromSubmission
+            if (this.step > this.steps.acknowledgment && this.step < this.steps.submission) {
+                return !!this.study.public_id
+            }
+            return false
+        },
+        sensitiveDataChecked: {
+            get() {
+                return this.hasStartedThisSubmission || this.sensitiveDataAcceptedThisSession
+            },
+            set(value) {
+                this.sensitiveDataAcceptedThisSession = value
+            }
+        },
+        hasAnySubmissionStarted() {
+            return this.studies.length > 0
+        },
+        hasAnySubmissionCompleted() {
+            return this.studies.some((s) => ['SUB', 'RES', 'APR', 'PUB'].includes(s.status_type_id))
+        },
+        defaultInfoExpanded() {
+            return !this.hasAnySubmissionStarted
+        },
+        formattedSdaC4ghKey() {
+            return this.sda_c4gh_key ? this.sda_c4gh_key.replace(/\\n/g, '\n') : ''
         }
     },
     mounted() {
         let query_key = this.$route.query ? _.keys(this.$route.query) : null
-        if (this.steps[query_key[0]]) this.step = this.steps[query_key[0]]
+        if (this.steps[query_key[0]]) {
+            this.step = this.steps[query_key[0]]
+            this.initialStepResolved = true
+        }
         this.sampleStore = useSampleStore()
         this.submissionStore = useSubmissionStore()
         this.study_id = this.$route.params.study_id
+        if (this.studies.length === 0) {
+            this.submissionStore
+                .getStudies({ status: 'draft,submitted,revised,published,approved,re-submitted' })
+                .finally(() => {
+                    this.studiesLoaded = true
+                })
+        } else {
+            this.studiesLoaded = true
+        }
         const schemaStore = useSchemaStore()
         schemaStore.getSchemas().then((schemas) => {
             if (schemas.Study !== undefined) {
@@ -517,12 +712,12 @@ export default defineComponent({
                     (field) => {
                         if (field === 'action_type_id') {
                             fields.push({
-                                title: 'action',
+                                title: 'Action',
                                 key: field
                             })
                         } else if (field !== 'id' && field !== 'success') {
                             fields.push({
-                                title: field,
+                                title: _.startCase(field),
                                 key: field
                             })
                         }
@@ -532,27 +727,44 @@ export default defineComponent({
             return fields
         },
 
-        getStepperValue(resource_name) {
-            if (resource_name == 'study') return 1
-            else if (resource_name == 'samples')
-                return this.study.nb_samples ? this.study.nb_samples : 0
-            else if (resource_name == 'experiments')
-                return this.study.nb_experiments ? this.study.nb_experiments : 0
-            else if (resource_name == 'runs') return this.study.nb_runs ? this.study.nb_runs : 0
-            else if (resource_name == 'analyses')
-                return this.study.nb_analyses ? this.study.nb_analyses : 0
-            else if (resource_name == 'datasets')
-                return this.study.nb_datasets ? this.study.nb_datasets : 0
+        isStepEditable(name) {
+            if (name === 'acknowledgment') return true
+            return (
+                this.study.id !== undefined &&
+                this.study.id !== null &&
+                this.canProceedFromSubmission
+            )
         },
-        colorBar(idx) {
-            let color = null
-            if (idx == 1 && this.study.public_id) color = 'green'
-            if (idx == 2 && this.study.nb_samples > 0) color = 'green'
-            if (idx == 3 && this.study.nb_experiments > 0) color = 'green'
-            if (idx == 4 && this.study.nb_runs > 0) color = 'green'
-            if (idx == 5 && this.study.nb_analyses > 0) color = 'green'
-            if (idx == 6 && this.study.nb_datasets > 0) color = 'green'
-            return color
+        isStepComplete(name) {
+            if (name === 'acknowledgment') return this.canProceedFromSubmission
+            if (name === 'study') return !!this.study.public_id
+            if (name === 'samples') return this.study.nb_samples > 0
+            if (name === 'experiments') return this.study.nb_experiments > 0
+            if (name === 'runs') return this.study.nb_runs > 0
+            if (name === 'analyses') return this.study.nb_analyses > 0
+            if (name === 'datasets') return this.study.nb_datasets > 0
+            if (name === 'submission')
+                return ['SUB', 'RES', 'APR', 'PUB'].includes(this.study.status_type_id)
+            return false
+        },
+        stepColor(name) {
+            if (this.isStepComplete(name)) return 'green'
+            if (this.step === this.steps[name]) return 'primary'
+            return undefined
+        },
+        hasStepCount(name) {
+            return ['study', 'samples', 'experiments', 'runs', 'analyses', 'datasets'].includes(name)
+        },
+        stepCount(name) {
+            if (name === 'study') return this.study.public_id ? 1 : 0
+            const counts = {
+                samples: this.study.nb_samples,
+                experiments: this.study.nb_experiments,
+                runs: this.study.nb_runs,
+                analyses: this.study.nb_analyses,
+                datasets: this.study.nb_datasets
+            }
+            return counts[name] || 0
         },
         resetModal() {
             this.uploadedResources = { nav: 'study', success: false, data: null, loaded: false }
@@ -560,6 +772,7 @@ export default defineComponent({
         openUploadModal() {
             this.files = null
             this.uploadedResources = { nav: 'study', success: false, data: null, loaded: false }
+            this.uploadProgress = { phase: null, current: 0, total: 0, resource_type: null }
             this.modal.status = true
         },
         closeModal() {
@@ -583,6 +796,7 @@ export default defineComponent({
             let _this = this
             if (_this.files) {
                 _this.filesUploading = 'primary'
+                _this.uploadProgress = { phase: null, current: 0, total: 0, resource_type: null }
                 let formData = new FormData()
                 // files
                 let fidx = 0
@@ -594,8 +808,20 @@ export default defineComponent({
                 formData.append('nb_files', fidx)
 
                 this.submissionStore
-                    .uploadStudy(formData)
-                    .then((uploadedResources) => {
+                    .uploadStudy(formData, (event) => {
+                        _this.uploadProgress = event
+                    })
+                    .then(async (uploadedResources) => {
+                        if (uploadedResources.success && _this.uploadProgress.total > 0) {
+                            // Let the bar visibly land on 100% before the view switches away
+                            _this.uploadProgress = {
+                                phase: 'done',
+                                current: _this.uploadProgress.total,
+                                total: _this.uploadProgress.total,
+                                resource_type: null
+                            }
+                            await new Promise((resolve) => setTimeout(resolve, 600))
+                        }
                         if (uploadedResources.success) {
                             _this.$notify({
                                 title: 'Success',
@@ -663,20 +889,9 @@ export default defineComponent({
                     link.click()
                     // _this.downloading = false
                 })
-                .catch((err) =>
-                    this.$notify({
-                        title: err.response.statusText,
-                        text: err.response.data,
-                        type: 'error'
-                    })
+                .catch(() =>
+                    notifyError('Failed to download study. Please try again.')
                 )
-        },
-        formatDate(value) {
-            return moment(value).format('DD.MM.YYYY')
-        },
-        submitStudy() {
-            this.getStudy()
-            this.step = 0
         },
         editStudy(study) {
             this.data = JSON.parse(JSON.stringify(study.properties))
@@ -689,13 +904,24 @@ export default defineComponent({
                     if (s == n) step = idx
                 })
             }
+            if (step > this.steps.acknowledgment && !this.canProceedFromSubmission) {
+                step = this.steps.acknowledgment
+                n = 'acknowledgment'
+            }
             this.step = step
             if (!n) {
                 let step_names = _.keys(this.steps)
-                n = step_names[step]
+                n = step_names[step - 1]
             }
             let query = { [n]: true }
             this.$router.push({ query: query })
+        },
+        goNext() {
+            if (this.step === this.steps.acknowledgment) {
+                this.changeStep('study')
+            } else {
+                this.changeStep(null, this.step + 1)
+            }
         },
         resetForm() {
             if (this.study_id === 'new') {
@@ -721,12 +947,8 @@ export default defineComponent({
                         this.delete_study = false
                         this.$router.push('/submissions')
                     })
-                    .catch((err) =>
-                        this.$notify({
-                            title: err.response.statusText,
-                            text: err.response.data,
-                            type: 'error'
-                        })
+                    .catch(() =>
+                        notifyError('Failed to delete study. Please try again.')
                     )
             }
         },
@@ -736,10 +958,7 @@ export default defineComponent({
                 .editStudy(this.data)
                 .then((res) => {
                     if (res.success !== undefined && !res.success) {
-                        this.$notify({
-                            type: 'error',
-                            title: res.message
-                        })
+                        notifyError('Failed to save study. Please try again.')
                     } else {
                         this.study = res
                         this.properties = res.properties
@@ -752,7 +971,7 @@ export default defineComponent({
                         if (this.study_id == 'new') {
                             this.$router.push('/submissions/' + res.public_id)
                             this.study_id = res.public_id
-                            this.getStudy(2)
+                            this.getStudy(this.steps.samples)
                         }
                     }
                 })
@@ -774,7 +993,7 @@ export default defineComponent({
                 .getStudy(this.study_id)
                 .then((study) => {
                     this.study = study
-                    if (this.study.status == 'published') this.showForm = false
+                    if (this.study.status == 'published' || this.study.status == 'approved') this.showForm = false
                     this.nav = 'form'
                     this.modal.status = false
                     this.properties = []
@@ -785,17 +1004,23 @@ export default defineComponent({
                     if (this.study_id === 'new') {
                         _this.showForm = true
                     }
-                    if (nextstep) this.step = nextstep
-                    if (this.study.status_type_id === 'SUB') {
+                    if (nextstep) {
+                        this.step = nextstep
+                    } else if (!this.initialStepResolved) {
+                        this.step = this.hasStartedThisSubmission
+                            ? this.steps.study
+                            : this.steps.acknowledgment
+                    }
+                    this.initialStepResolved = true
+                    if (this.study.status_type_id === 'SUB' || this.study.status_type_id === 'RES') {
                         _this.showForm = false
                     }
+                    if (this.step > this.steps.acknowledgment && !this.canProceedFromSubmission) {
+                        this.changeStep('acknowledgment')
+                    }
                 })
-                .catch((err) =>
-                    this.$notify({
-                        title: err.response.statusText,
-                        text: err.response.data,
-                        type: 'error'
-                    })
+                .catch(() =>
+                    notifyError('Failed to load study. Please try again.')
                 )
         },
         updateData(event) {
@@ -812,12 +1037,8 @@ export default defineComponent({
                     link.download = 'fega_templates.zip'
                     link.click()
                 })
-                .catch((err) => {
-                    _this.$notify({
-                        title: err.response.statusText,
-                        text: err.response.data,
-                        type: 'error'
-                    })
+                .catch(() => {
+                    notifyError('Failed to download templates. Please try again.')
                 })
         },
         downloadCli() {
@@ -831,15 +1052,21 @@ export default defineComponent({
                     link.download = 'fega-cli.zip'
                     link.click()
                 })
-                .catch((err) => {
-                    _this.$notify({
-                        title: err.response.statusText,
-                        text: err.response.data,
-                        type: 'error'
-                    })
+                .catch(() => {
+                    notifyError('Failed to download CLI. Please try again.')
                 })
-        }
+        },
+        createNewVersion() {
+		      if (this.study.status_type_id === 'PUB'){
+		        let submissionStore = useSubmissionStore()
+		        submissionStore.createSubmissionVersion().then((res) => {
+
+		        })
+		      }
+		      
+		    }
     },
+
     provide() {
         return {
             styles: myStyles
@@ -854,6 +1081,11 @@ export default defineComponent({
     padding: 0;
 }
 
+/* Keep digit widths constant so the caption doesn't jitter as counts tick up (e.g. "5 / 50" -> "12 / 50") */
+.upload-progress-nums {
+    font-variant-numeric: tabular-nums;
+}
+
 /* Markdown documentation pages */
 .markdown-body ol {
     padding: 16px 40px;
@@ -863,5 +1095,60 @@ export default defineComponent({
 }
 .v-alert .little-v-alert {
     margin-top: 100px;
+}
+
+#studyForm.v-card {
+    box-shadow: none !important;
+    border: none !important;
+}
+
+#studyForm.jf-form > .vertical-layout > .v-row > .v-col.vertical-layout-item {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+}
+
+#studyForm.jf-form > .v-card-actions {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+}
+
+.submission-stepper-bar {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.submission-stepper-arrow.v-btn {
+    align-self: center;
+}
+
+.submission-stepper-arrow-wrap {
+    display: inline-flex;
+    flex: 0 0 auto;
+}
+
+.submission-stepper {
+    flex: 1 1 0%;
+    width: auto !important;
+}
+
+.submission-stepper .v-stepper-header {
+    overflow-x: visible;
+}
+
+.submission-stepper-divider {
+    margin: 16px 0;
+}
+
+.submission-content {
+    margin-top: 0;
+}
+
+.submission-start-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin: 0 0 16px;
 }
 </style>

@@ -32,7 +32,7 @@ export const useDatasetStore = defineStore('datasets', {
     getDataset(datasetId) {
       return new Promise((resolve, reject) => {
         this.dataset = {}
-        HTTP.get(`/datasets/${datasetId}`)
+        HTTP.get(`/datasets/${encodeURIComponent(datasetId)}`)
           .then((res) => {
             this.dataset = res.data
             resolve(res.data)
@@ -44,7 +44,7 @@ export const useDatasetStore = defineStore('datasets', {
     },
     getStudyDatasets(params) {
       return new Promise((resolve, reject) => {
-        HTTP.get(`/submissions/${params.study_id}/datasets`)
+        HTTP.get(`/submissions/${encodeURIComponent(params.study_id)}/datasets`)
           .then((res) => {
             this.datasets = res.data
             resolve(res.data)
@@ -58,7 +58,7 @@ export const useDatasetStore = defineStore('datasets', {
       let promises = []
       _.forEach(params, (p) => {
         const promise = new Promise((resolve, reject) => {
-          HTTP.delete(`/submissions/${p.study_id}/datasets/${p.dataset_id}`)
+          HTTP.delete(`/submissions/${encodeURIComponent(p.study_id)}/datasets/${encodeURIComponent(p.dataset_id)}`)
             .then((res) => {
               const deletedDatasetId = res.data
               let idx = _.findIndex(this.datasets, function (ds) {
@@ -84,10 +84,10 @@ export const useDatasetStore = defineStore('datasets', {
       return new Promise((resolve, reject) => {
         const method = params.dataset.properties.public_id ? 'put' : 'post'
         const putPath = params.dataset.properties.public_id
-          ? `/${params.dataset.properties.public_id}`
+          ? `/${encodeURIComponent(params.dataset.properties.public_id)}`
           : ''
         HTTP[method](
-          `/submissions/${params.study_id}/datasets${putPath}`,
+          `/submissions/${encodeURIComponent(params.study_id)}/datasets${putPath}`,
           params.dataset,
         )
           .then((res) => {
@@ -135,7 +135,7 @@ export const useDatasetStore = defineStore('datasets', {
     },
     downloadDataset(dataset_id) {
       return new Promise((resolve, reject) => {
-        HTTP.get('/datasets/' + dataset_id + '/download', {
+        HTTP.get('/datasets/' + encodeURIComponent(dataset_id) + '/download', {
           responseType: 'arraybuffer',
         })
           .then((res) => {
@@ -146,7 +146,7 @@ export const useDatasetStore = defineStore('datasets', {
     },
     uploadDatasets(studyId, formData) {
       return new Promise((resolve, reject) => {
-        HTTP.post(`/submissions/${studyId}/upload-datasets`, formData, {
+        HTTP.post(`/submissions/${encodeURIComponent(studyId)}/upload-datasets`, formData, {
           headers: {
             'Content-Type': 'multipart/form-data',
           },

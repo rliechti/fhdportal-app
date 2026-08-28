@@ -1,338 +1,385 @@
 <template>
-  <div class="Studies">
-    <v-sheet rounded="lg">
-      <v-container>
-        <p v-if="error" class="text-danger">{{ error }}</p>
-        <p v-if="!loaded" class="text-center mt-3">
-          <v-progress-circular
-            color="primary"
-            indeterminate
-          ></v-progress-circular>
-        </p>
-        <div v-else>
-          <template v-if="studies.length">
-            <v-card>
-              <v-data-table
-                :items="studies"
-                :headers="studyTableHeaders"
-                items-per-page="-1"
-                :hide-default-footer="true"
-                :hover="true"
-              >
-                <template #header.nb_samples="{}"
-                  ><p>
-                    <v-tooltip activator="parent" location="bottom"
-                      >Nb samples
-                    </v-tooltip>
-                    <v-icon icon="mdi-water"></v-icon>
-                  </p>
-                </template>
-                <template #header.nb_experiments="{}"
-                  ><p>
-                    <v-tooltip activator="parent" location="bottom"
-                      >Nb experiments
-                    </v-tooltip>
-                    <v-icon icon="mdi-eyedropper"></v-icon>
-                  </p>
-                </template>
-                <template #header.nb_runs="{}"
-                  ><p>
-                    <v-tooltip activator="parent" location="bottom"
-                      >Nb runs
-                    </v-tooltip>
-                    <v-icon icon="mdi-run"></v-icon>
-                  </p>
-                </template>
-                <template #header.nb_analyses="{}"
-                  ><p>
-                    <v-tooltip activator="parent" location="bottom"
-                      >Nb analyses
-                    </v-tooltip>
-                    <v-icon icon="mdi-graphql"></v-icon>
-                  </p>
-                </template>
-                <template #header.nb_datasets="{}"
-                  ><p>
-                    <v-tooltip activator="parent" location="bottom"
-                      >Nb datasets
-                    </v-tooltip>
-                    <v-icon icon="mdi-file-document"></v-icon>
-                  </p>
-                </template>
-                <template #item.title="{ item }">
-                  {{ item.title }}
-                  <v-btn
-                    variant="flat"
-                    class="text-info"
-                    @click="copy(item.public_id)"
-                  >
-                    <v-icon icon="mdi-information"></v-icon>
-                    <v-tooltip activator="parent" location="top"
-                      >{{ item.public_id }}
-                    </v-tooltip>
-                  </v-btn>
-                </template>
+    <div class="Studies">
+        <v-sheet rounded="lg">
+            <v-container fluid>
+                <p v-if="error" class="text-danger">{{ error }}</p>
+                <p v-if="!loaded" class="text-center mt-3">
+                    <v-progress-circular color="primary" indeterminate></v-progress-circular>
+                </p>
+                <div v-else>
+                    <template v-if="visibleStudies.length">
+                        <DataTable
+                            table-id="submissions"
+                            :items="visibleStudies"
+                            :headers="studyTableHeaders"
+                            v-model:search="search"
+                            :primary-action="primaryAction"
+                            @primary-action="openNewStudy"
+                        >
+                            <template #header.nb_samples="{}"
+                                ><span>
+                                    <v-tooltip activator="parent" location="bottom"
+                                        >Samples
+                                    </v-tooltip>
+                                    <v-icon icon="mdi-water"></v-icon>
+                                </span>
+                            </template>
+                            <template #header.nb_experiments="{}"
+                                ><span>
+                                    <v-tooltip activator="parent" location="bottom"
+                                        >Experiments
+                                    </v-tooltip>
+                                    <v-icon icon="mdi-eyedropper"></v-icon>
+                                </span>
+                            </template>
+                            <template #header.nb_runs="{}"
+                                ><span>
+                                    <v-tooltip activator="parent" location="bottom"
+                                        >Runs
+                                    </v-tooltip>
+                                    <v-icon icon="mdi-run"></v-icon>
+                                </span>
+                            </template>
+                            <template #header.nb_analyses="{}"
+                                ><span>
+                                    <v-tooltip activator="parent" location="bottom"
+                                        >Analyses
+                                    </v-tooltip>
+                                    <v-icon icon="mdi-graphql"></v-icon>
+                                </span>
+                            </template>
+                            <template #header.nb_datasets="{}"
+                                ><span>
+                                    <v-tooltip activator="parent" location="bottom"
+                                        >Datasets
+                                    </v-tooltip>
+                                    <v-icon icon="mdi-file-document"></v-icon>
+                                </span>
+                            </template>
+                            <template #item.public_id="{ item }">
+                                <CopyIdCell :value="item.public_id" notify-label="Public ID" />
+                            </template>
+                            <template #item.title="{ item }">
+                                <v-btn
+                                    variant="text"
+                                    color="info"
+                                    class="fega-table-btn"
+                                    @click="goToStudy(item)"
+                                    >{{ item.title }}</v-btn
+                                >
+                            </template>
 
-                <template #column.creation_date="{ column }">
-                  {{ column.title }}
-                </template>
-                <template #item.creation_date="{ value }">
-                  {{ formatDate(value) }}
-                </template>
-                <template #item.last_update="{ value }">
-                  {{ formatDate(value) }}
-                </template>
-                <template #item.actions="{ item }">
-                  <p class="text-center" style="white-space: nowrap">
-                    <v-btn
-                      size="small"
-                      style="display: inline-flex; margin-bottom: 1px"
-                      :color="
-                        item.current_permission.indexOf('edit') > -1
-                          ? 'primary'
-                          : 'warning'
-                      "
-                      variant="outlined"
-                      @click="openStudy(item)"
-                    >
-                      <v-icon class="mr-1" icon="mdi-eye"></v-icon
-                      >{{
-                        item.current_permission.indexOf('edit') > -1
-                          ? 'details'
-                          : 'review'
-                      }}</v-btn
-                    >
-                    <permissions
-                      style="display: inline-flex; margin-left: 5px"
-                      :study="item"
-                      display="share"
-                    >
-                    </permissions>
-                  </p>
-                </template>
-                <template #item.status="{ value }">
-                  <v-chip :color="getStatusClass(value)">{{ value }}</v-chip>
-                </template>
-              </v-data-table>
-            </v-card>
-          </template>
-        </div>
-      </v-container>
-    </v-sheet>
-  </div>
+                            <template #item.nb_samples="{ item, value }">
+                                <v-btn
+                                    variant="text"
+                                    color="info"
+                                    class="fega-table-btn"
+                                    @click="goToStudy(item, 'samples')"
+                                    >{{ value }}</v-btn
+                                >
+                            </template>
+                            <template #item.nb_experiments="{ item, value }">
+                                <v-btn
+                                    variant="text"
+                                    color="info"
+                                    class="fega-table-btn"
+                                    @click="goToStudy(item, 'experiments')"
+                                    >{{ value }}</v-btn
+                                >
+                            </template>
+                            <template #item.nb_runs="{ item, value }">
+                                <v-btn
+                                    variant="text"
+                                    color="info"
+                                    class="fega-table-btn"
+                                    @click="goToStudy(item, 'runs')"
+                                    >{{ value }}</v-btn
+                                >
+                            </template>
+                            <template #item.nb_analyses="{ item, value }">
+                                <v-btn
+                                    variant="text"
+                                    color="info"
+                                    class="fega-table-btn"
+                                    @click="goToStudy(item, 'analyses')"
+                                    >{{ value }}</v-btn
+                                >
+                            </template>
+                            <template #item.nb_datasets="{ item, value }">
+                                <v-btn
+                                    variant="text"
+                                    color="info"
+                                    class="fega-table-btn"
+                                    @click="goToStudy(item, 'datasets')"
+                                    >{{ value }}</v-btn
+                                >
+                            </template>
+
+                            <template #item.last_update="{ value }">
+                                <DateCell :value="value" />
+                            </template>
+                            <template #item.actions="{ item }">
+                                <p class="text-center" style="white-space: nowrap">
+                                    <v-btn
+                                        size="small"
+                                        style="display: inline-flex; margin-bottom: 1px"
+                                        color="info"
+                                        variant="outlined"
+                                        @click="openStudy(item)"
+                                    >
+                                        <v-icon class="mr-1" icon="mdi-eye"></v-icon
+                                        >{{
+                                            item.current_permission !== null &&
+                                            item.current_permission.indexOf('edit') > -1
+                                                ? 'details'
+                                                : 'review'
+                                        }}</v-btn
+                                    >
+                                    <permissions
+                                        style="display: inline-flex; margin-left: 5px"
+                                        :study="item"
+                                        display="share"
+                                    >
+                                    </permissions>
+                                </p>
+                            </template>
+                            <template #item.status="{ value }">
+                                <StatusChip :status="value" />
+                            </template>
+                        </DataTable>
+                    </template>
+                </div>
+            </v-container>
+        </v-sheet>
+    </div>
 </template>
 
 <script>
 import { defineComponent } from 'vue'
-import useClipboard from 'vue-clipboard3'
+import { notifyError } from '@/utils/notify'
+import { useAuthStore } from '@/stores/auth.ts'
 import { useSubmissionStore } from '@/stores/submissions.js'
 import { useSchemaStore } from '@/stores/schemas.js'
 
 import Permissions from '@/views/Permissions.vue'
-import moment from 'moment'
+import DataTable from '@/components/shared/DataTable.vue'
+import CopyIdCell from '@/components/shared/datatable/cells/CopyIdCell.vue'
+import StatusChip from '@/components/shared/datatable/cells/StatusChip.vue'
+import DateCell from '@/components/shared/datatable/cells/DateCell.vue'
+import { numericColumn, dateColumn, idColumn } from '@/utils/dataTableHeaders'
 import _ from 'lodash'
 import { mapState } from 'pinia'
 
 export default defineComponent({
-  name: 'Studies',
-  components: {
-    Permissions,
-  },
-  props: ['from', 'status'],
-  data() {
-    return {
-      submissionStore: null,
-      loaded: false,
-      error: '',
-      pmid: '',
-      publications: [],
-      studyTableHeaders: [
-        // {
-        //     title: 'ID',
-        //     value: 'public_id'
-        //
-        // },
-        {
-          title: 'Title',
-          value: 'title',
+    name: 'Studies',
+    components: {
+        Permissions,
+        DataTable,
+        CopyIdCell,
+        StatusChip,
+        DateCell
+    },
+    props: ['from', 'status'],
+    data() {
+        return {
+            submissionStore: null,
+            loaded: false,
+            error: '',
+            pmid: '',
+            search: '',
+            publications: [],
+            studyTableHeaders: [
+                idColumn({
+                    title: 'ID',
+                    value: 'public_id',
+                    align: 'center',
+                    headerProps: { class: 'fega-table-cell-compact' },
+                    cellProps: { class: 'fega-table-cell-compact' },
+                    hideable: false
+                }),
+                {
+                    title: 'Title',
+                    value: 'title',
+                    hideable: false
+                },
+                numericColumn({
+                    title: 'Samples',
+                    value: 'nb_samples',
+                    icon: 'water',
+                    align: 'center',
+                    headerProps: { class: 'fega-table-cell-compact' },
+                    cellProps: { class: 'fega-table-cell-compact' }
+                }),
+                numericColumn({
+                    title: 'Experiments',
+                    value: 'nb_experiments',
+                    icon: 'eyedropper',
+                    align: 'center',
+                    headerProps: { class: 'fega-table-cell-compact' },
+                    cellProps: { class: 'fega-table-cell-compact' }
+                }),
+                numericColumn({
+                    title: 'Runs',
+                    value: 'nb_runs',
+                    icon: 'run',
+                    align: 'center',
+                    headerProps: { class: 'fega-table-cell-compact' },
+                    cellProps: { class: 'fega-table-cell-compact' }
+                }),
+                numericColumn({
+                    title: 'Analyses',
+                    value: 'nb_analyses',
+                    icon: 'graphql',
+                    align: 'center',
+                    headerProps: { class: 'fega-table-cell-compact' },
+                    cellProps: { class: 'fega-table-cell-compact' }
+                }),
+                numericColumn({
+                    title: 'Datasets',
+                    value: 'nb_datasets',
+                    icon: 'file-document',
+                    align: 'center',
+                    headerProps: { class: 'fega-table-cell-compact' },
+                    cellProps: { class: 'fega-table-cell-compact' }
+                }),
+                {
+                    title: 'Status',
+                    value: 'status',
+                    width: '1%'
+                },
+                dateColumn({
+                    title: 'Last Updated',
+                    value: 'last_update'
+                }),
+                {
+                    title: 'Created By',
+                    value: 'creator_name',
+                    width: '1%'
+                },
+                {
+                    title: 'Actions',
+                    key: 'actions',
+                    sortable: false,
+                    align: 'center',
+                    width: '1%',
+                    hideable: false
+                }
+            ],
+            showForm: false,
+            data: {
+                id: null,
+                title: 'Sample Study',
+                study_type: 'Whole Genome Sequencing',
+                description: 'this is a test'
+            },
+            data_schema: null,
+            ui_schema: null
+        }
+    },
+    computed: {
+        ...mapState(useAuthStore, ['user']),
+        ...mapState(useSubmissionStore, ['studies']),
+        ...mapState(useSchemaStore, ['schemas']),
+        showNewStudy() {
+            return this.from === 'submission'
         },
-        {
-          title: 'Samples',
-          value: 'nb_samples',
-          icon: 'water',
+        visibleStudies() {
+            if (this.from !== 'submission') return this.studies
+            return this.studies.filter((study) => study.creator_username === this.user.id)
         },
-        {
-          title: 'Experiments',
-          value: 'nb_experiments',
-          icon: 'eyedropper',
+        primaryAction() {
+            if (!this.showNewStudy) return null
+            const hasSshKey = this.user.sshPublicKeys.length > 0
+            return {
+                label: 'New Submission',
+                icon: 'mdi-plus',
+                disabled: !hasSshKey,
+                tooltip: hasSshKey ? undefined : 'Please first upload a public SSH key'
+            }
+        }
+    },
+    mounted() {
+        this.submissionStore = useSubmissionStore()
+        const schemaStore = useSchemaStore()
+        schemaStore.getSchemas().then((schemas) => {
+            if (schemas.Study !== undefined) {
+                this.data_schema = schemas.Study.data_schema
+                this.ui_schema = schemas.Study.ui_schema
+            }
+        })
+        this.getStudies()
+        this.getPublications = _.debounce(this.getPublications, 500)
+        this.submissionStore.getStatusTypes()
+    },
+    methods: {
+        studyLink(study, tab) {
+            return tab
+                ? `/submissions/${study.public_id}?${tab}=true`
+                : `/submissions/${study.public_id}`
         },
-        {
-          title: 'Runs',
-          value: 'nb_runs',
-          icon: 'run',
+        goToStudy(study, tab) {
+            this.$router.push(this.studyLink(study, tab))
         },
-        {
-          title: 'Analyses',
-          value: 'nb_analyses',
-          icon: 'graphql',
+        openNewStudy() {
+            this.$router.push('/submissions/new')
         },
-        {
-          title: 'Datasets',
-          value: 'nb_datasets',
-          icon: 'file-document',
+        openStudy(study) {
+            let route = '/submissions/' + study.public_id
+            this.$router.push(route)
         },
-        {
-          title: 'Status',
-          value: 'status',
+        getStudies() {
+            let params = {}
+            if (this.from == 'submission') {
+                params = { status: 'draft,submitted,revised,published,approved,re-submitted' }
+            } else if (this.from == 'list') {
+                params = { status: this.status }
+            }
+            this.submissionStore
+                .getStudies(params)
+                .then(() => {
+                    this.loaded = true
+                })
+                .catch(() => notifyError('Failed to load studies. Please try again.'))
         },
-        // {
-        // 	title: 'Creation date',
-        // 	value: 'creation_date'
-        // },
-        {
-          title: 'Last update',
-          value: 'last_update',
+        editStudy(study) {
+            this.data = JSON.parse(JSON.stringify(study.properties))
+            this.data.id = study.id
+            this.showForm = true
         },
-        {
-          title: 'Created by',
-          value: 'creator_name',
+        updateData(event) {
+            this.data = event.data
         },
-        {
-          title: 'Actions',
-          key: 'actions',
-          sortable: false,
-          align: 'center',
-          headerProps: { style: 'font-weight: bold' },
+        resetForm() {
+            let _this = this
+            Object.keys(this.data).forEach(function (index) {
+                _this.data[index] = null
+            })
+            this.showForm = false
         },
-      ],
-      showForm: false,
-      data: {
-        id: null,
-        title: 'Sample Study',
-        study_type: 'Whole Genome Sequencing',
-        description: 'this is a test',
-      },
-      data_schema: null,
-      ui_schema: null,
+        submitForm() {
+            this.submissionStore
+                .editStudy(this.data)
+                .then(() => {
+                    const action = this.data.id ? 'updated' : 'registered'
+                    this.$notify({
+                        title: 'Study ' + action + ' successfully',
+                        type: 'success'
+                    })
+                    this.showForm = false
+                })
+                .catch(() => notifyError('Failed to save the study. Please try again.'))
+        },
+        getPublications(search) {
+            const _this = this
+            if (search !== null && search.length > 4) {
+                this.submissionStore
+                    .getPubmeds(search)
+                    .then((pubmeds) => {
+                        _this.publications = Object.values(pubmeds)
+                    })
+                    .catch(() => notifyError('Failed to search publications. Please try again.'))
+            }
+        }
     }
-  },
-  computed: {
-    ...mapState(useSubmissionStore, ['studies']),
-    ...mapState(useSchemaStore, ['schemas']),
-    ...mapState(useSubmissionStore, ['statusTypes']),
-  },
-  mounted() {
-    this.submissionStore = useSubmissionStore()
-    const schemaStore = useSchemaStore()
-    _.forEach(this.studyTableHeaders, function (sh) {
-      sh.headerProps = { style: 'font-weight: 600' }
-    })
-    schemaStore.getSchemas().then((schemas) => {
-      if (schemas.Study !== undefined) {
-        this.data_schema = schemas.Study.data_schema
-        this.ui_schema = schemas.Study.ui_schema
-      }
-    })
-    this.getStudies()
-    this.getPublications = _.debounce(this.getPublications, 500)
-    this.submissionStore.getStatusTypes()
-  },
-  methods: {
-    async copy(msg) {
-      const { toClipboard } = useClipboard()
-      try {
-        await toClipboard(msg)
-        this.$notify({ type: 'success', text: 'Public ID copied to clipboard' })
-      } catch (e) {
-        console.error(e)
-      }
-    },
-    openStudy(study) {
-      let route = '/submissions/' + study.public_id
-      this.$router.push(route)
-    },
-    getStudies() {
-      let params = {}
-      if (this.from == 'submission') {
-        params = { status: 'draft,submitted,published' }
-      } else if (this.from == 'list') {
-        params = { status: this.status }
-      }
-      this.submissionStore
-        .getStudies(params)
-        .then(() => {
-          this.loaded = true
-        })
-        .catch((err) =>
-          this.$notify({
-            title: err.response.statusText,
-            text: err.response.data,
-            type: 'error',
-          }),
-        )
-    },
-    editStudy(study) {
-      this.data = JSON.parse(JSON.stringify(study.properties))
-      this.data.id = study.id
-      this.showForm = true
-    },
-    updateData(event) {
-      this.data = event.data
-    },
-    resetForm() {
-      let _this = this
-      Object.keys(this.data).forEach(function (index) {
-        _this.data[index] = null
-      })
-      this.showForm = false
-    },
-    submitForm() {
-      this.submissionStore
-        .editStudy(this.data)
-        .then(() => {
-          const action = this.data.id ? 'updated' : 'registered'
-          this.$notify({
-            title: 'Study ' + action + ' successfully',
-            type: 'success',
-          })
-          this.showForm = false
-        })
-        .catch((err) =>
-          this.$notify({
-            title: err.response.statusText,
-            text: err.response.data,
-            type: 'error',
-          }),
-        )
-    },
-    formatDate(value) {
-      return moment(value).format('DD MMM YYYY')
-    },
-    getPublications(search) {
-      const _this = this
-      if (search !== null && search.length > 4) {
-        this.submissionStore
-          .getPubmeds(search)
-          .then((pubmeds) => {
-            _this.publications = Object.values(pubmeds)
-          })
-          .catch((err) =>
-            this.$notify({
-              title: err.response.statusText,
-              text: err.response.data,
-              type: 'error',
-            }),
-          )
-      }
-    },
-    getStatusClass(status_type) {
-      let idx = _.findIndex(this.statusTypes, (sT) => {
-        return sT.name === status_type
-      })
-      if (idx > -1) {
-        return this.statusTypes[idx].class_name
-      }
-    },
-  },
 })
 </script>

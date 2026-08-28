@@ -78,17 +78,19 @@
                                 @change="uploadAction"
                             ></v-file-input>
                         </div>
-                        <v-data-table
+                        <DataTable
                             v-if="uploadedResources.length > 0"
                             :items="uploadedResources"
                             :headers="uploadedResourcesHeaders"
+                            :show-search="false"
+                            :show-columns-menu="false"
                         >
                             <template #item.status="{ value }">
                                 <v-chip :color="getStatusClass(value)" size="small">{{
                                     value
                                 }}</v-chip>
                             </template>
-                        </v-data-table>
+                        </DataTable>
 
                         <v-card
                             v-if="error.errors.length"
@@ -182,9 +184,13 @@ import VerticalCheckboxControlRenderer from '@/components/VerticalCheckboxContro
 import VerticalCheckboxControlTester from '@/testers/VerticalCheckboxControlTester.js'
 import NumberControlRenderer from '@/components/NumberControlRenderer.vue'
 import NumberControlTester from '@/testers/NumberControlTester.js'
+import InstrumentModelControlRenderer from '@/components/InstrumentModelControlRenderer.vue'
+import InstrumentModelControlTester from '@/testers/InstrumentModelControlTester.js'
 
 import _ from 'lodash'
 import moment from 'moment'
+import { notifyError } from '@/utils/notify'
+import DataTable from '@/components/shared/DataTable.vue'
 const renderers = [
     ...vuetifyRenderers,
     {
@@ -206,13 +212,18 @@ const renderers = [
     {
         tester: VerticalCheckboxControlTester,
         renderer: VerticalCheckboxControlRenderer
+    },
+    {
+        tester: InstrumentModelControlTester,
+        renderer: InstrumentModelControlRenderer
     }
 ]
 
 export default defineComponent({
     name: 'ModalResource',
     components: {
-        JsonForms
+        JsonForms,
+        DataTable
     },
     props: ['cas', 'study_id', 'type', 'input_data', 'edit', 'title', 'hide_upload', 'permissions'],
     data() {
@@ -254,7 +265,10 @@ export default defineComponent({
         ...mapState(useSampleStore, ['samples']),
         ...mapState(useSchemaStore, ['schemas']),
         readonly() {
-            return this.permissions.indexOf('edit') === -1 || this.study.status_type_id !== 'DRA'
+            return (
+                this.permissions.indexOf('edit') === -1 ||
+                (this.study.status_type_id !== 'DRA' && this.study.status_type_id !== 'REV')
+            )
         }
     },
     mounted() {
@@ -286,12 +300,8 @@ export default defineComponent({
                     link.download = 'template_' + _this.typeLabel + '.xlsx'
                     link.click()
                 })
-                .catch((err) => {
-                    _this.$notify({
-                        title: err.response.statusText,
-                        text: err.response.data,
-                        type: 'error'
-                    })
+                .catch(() => {
+                    notifyError('Failed to download template. Please try again.')
                 })
         },
         deleteResources(action) {
@@ -330,18 +340,13 @@ export default defineComponent({
                         _this.deleteResource.status = false
                         _this.close(true)
                     })
-                    .catch((err) => {
+                    .catch(() => {
                         _this.deleteResource.status = false
-                        _this.$notify({
-                            title: err.response.statusText,
-                            text: err.response.data,
-                            type: 'error'
-                        })
+                        notifyError('Failed to delete resource. Please try again.')
                     })
             }
         },
         close(reload) {
-            console.info('CLOSE MODAL : reload', reload)
             this.$emit('closeModal', reload)
         },
 
@@ -380,10 +385,9 @@ export default defineComponent({
                 // _this.currentStore.uploadSamples(_this.study_public_id,formData).then(uploadedResources => {
                 current_function
                     .then((result) => {
-                        _this.$notify({
-                            type: result.success ? 'success' : 'error',
-                            text: result.message
-                        })
+                        if (!result.success) {
+                            notifyError('Failed to upload file. Please try again.')
+                        }
                         if (result.success) {
                             let uploadedResources = []
                             _.forEach(result.resources, (r) => {
@@ -412,7 +416,7 @@ export default defineComponent({
                             ]
                             _.forEach(_this.data_schema['required'], function (s) {
                                 _this.uploadedResourcesHeaders.push({
-                                    title: s.replace('_', ' '),
+                                    title: _.startCase(s),
                                     value: s
                                 })
                             })
@@ -424,13 +428,9 @@ export default defineComponent({
 
                         _this.filesUploading = false
                     })
-                    .catch((err) => {
+                    .catch(() => {
                         _this.filesUploading = false
-                        _this.$notify({
-                            title: err.response.statusText,
-                            text: err.response.data,
-                            type: 'error'
-                        })
+                        notifyError('Failed to upload file. Please try again.')
                     })
             }
         },
@@ -494,7 +494,6 @@ export default defineComponent({
             }
             current_function
                 .then(() => {
-                    console.info('ici ?')
                     _this.close(true)
                     _this.data = {}
                     _this.$notify({
@@ -503,11 +502,7 @@ export default defineComponent({
                     })
                 })
                 .catch((err) => {
-                    _this.$notify({
-                        title: err.response.statusText,
-                        text: err.response.data,
-                        type: 'error'
-                    })
+                    notifyError('Failed to save resource. Please try again.')
                     _this.error = err.response.data
                 })
         },

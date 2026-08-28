@@ -1,7 +1,7 @@
 <template>
   <div class="UserManual">
     <v-sheet min-height="70vh" rounded="lg">
-    <v-container class="maxWidth">
+    <v-container fluid class="maxWidth">
     <v-card>
     <v-card-text>
       <div class="github-markdown-body">

@@ -1,36 +1,38 @@
-### Encrypting your files
+<script setup>
+defineProps(['sda_c4gh_key'])
+</script>
 
-The FEGA encryption of this inbox is based on [Crypt4GH](https://crypt4gh.readthedocs.io/en/latest/). You can install a python implementation of it, with
+### File Encryption Guide
+
+Encryption for this inbox is based on [Crypt4GH](https://crypt4gh.readthedocs.io/en/latest/). Install the `crypt4gh` tool with:
 
 ```bash
 pip install crypt4gh
 ```
 
-or directly from the [Github repository](https://github.com/EGA-archive/crypt4gh)
+or directly from the [GitHub repository](https://github.com/EGA-archive/crypt4gh):
 
 ```bash
 pip install git+https://github.com/EGA-archive/crypt4gh.git
 ```
 
-Save now the following Crypt4GH public key, into a file, say `ingestion.pubkey.`
+Save the following Crypt4GH public key into a file, e.g. `fega.pubkey`:
 
-```bash
------BEGIN CRYPT4GH PUBLIC KEY-----
-iT9V6iGJCcS2kCOQtSlVGv3LUGQsDU4lYLi4CL7dJAo=
------END CRYPT4GH PUBLIC KEY-----
-```
+<pre>
+{{ sda_c4gh_key }}
+</pre>
 
 Encrypt a given file with the following command:
 
 ```bash
-crypt4gh encrypt --recipient_pk ingestion.pubkey < file_to_encrypt > encrypted_file.c4gh
+crypt4gh encrypt --recipient_pk fega.pubkey < file_to_encrypt > encrypted_file.c4gh
 ```
 
-The command reads the file from `stdin` (with `<` ) and output the encrypted version to `stdout` (with `>` ).  
-Replace `file_to_encrypt` and `encrypted_file.c4gh` with the appropriate filenames but make sure to not use the same filename for both reading and writing because your SHELL would then truncate both files before you even read or write.
+This command reads the file from `stdin` (using `<`) and writes the encrypted version to `stdout` (using `>`).  
+Replace `file_to_encrypt` and `encrypted_file.c4gh` with the appropriate filenames, but make sure not to use the same filename for both reading and writing — your shell would otherwise truncate both files before either is read or written.
 
- Compute SHA256 checksum of the encrypted file:
- 
- ```bash
- sha256sum encrypted_file.c4gh > encrypted_file.c4gh.sha256
- ```
+Compute the SHA256 checksum of the encrypted file:
+
+```bash
+sha256sum encrypted_file.c4gh > encrypted_file.c4gh.sha256
+```

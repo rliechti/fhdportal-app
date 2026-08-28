@@ -4,9 +4,24 @@
     <meta charset="UTF-8" />
     <link rel="icon" href="/favicon.ico" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link
-      rel="stylesheet"
-      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap"
+    <!--
+      Defence in depth alongside public/_headers (security audit H-2): a <meta>
+      CSP is honoured even if the hosting platform ever drops the real HTTP
+      header, but it cannot carry frame-ancestors, HSTS, or X-Frame-Options -
+      those only take effect via the response header in public/_headers.
+
+      script-src needs 'unsafe-eval': @jsonforms/core compiles every schema-driven
+      form with ajv, which materializes each compiled validator via `new Function(...)`
+      at runtime (node_modules/ajv/dist/compile/index.js) - there is no way to validate
+      a schema fetched dynamically from the API without it. Confirmed by reproducing the
+      exact failure: without this, ajv.compile() throws
+      "EvalError: ... 'unsafe-eval' is not an allowed source", breaking every submission
+      and resource form in the app. This does not reopen H-1 (that sink was a DOM href,
+      not eval) but it is a real, deliberate narrowing of what H-2 claims to contain.
+    -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob:; connect-src 'self' https://sso.sib.swiss %VITE_API_ORIGIN%; base-uri 'self'; form-action 'self' https://sso.sib.swiss; object-src 'none'"
     />
     <title>FEGA Switzerland</title>
   </head>

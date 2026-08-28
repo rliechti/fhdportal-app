@@ -5,6 +5,11 @@
             <span :class="styles.arrayList.label">{{ cardTitle }}</span>
             <v-spacer />
             <div class="resource-list-actions">
+                <span
+                    v-if="selectedCount > 0"
+                    class="resource-list-selected-count text-caption text-medium-emphasis"
+                    >{{ selectedCount }} selected</span
+                >
                 <button
                     class="resource-list-btn"
                     :disabled="!control.enabled || undefined"
@@ -105,9 +110,6 @@
                 v-if="resources.length > 0"
                 class="resource-list-footer d-flex align-center flex-wrap px-3 py-1"
             >
-                <span class="text-caption text-medium-emphasis">{{ paginationInfo }}</span>
-                <v-spacer />
-                <span class="text-caption text-medium-emphasis me-1">Per page:</span>
                 <v-select
                     v-model="pageSize"
                     :items="pageSizeOptions"
@@ -119,6 +121,9 @@
                     :menu-props="{ contentClass: 'resource-list-per-page-menu' }"
                     @update:model-value="currentPage = 1"
                 />
+                <span class="text-caption text-medium-emphasis ms-1">per page</span>
+                <v-spacer />
+                <span class="text-caption text-medium-emphasis">{{ paginationInfo }}</span>
                 <v-pagination
                     v-if="totalPages > 1"
                     v-model="currentPage"
@@ -343,8 +348,8 @@ const controlRenderer = defineComponent({
     props: { ...rendererProps<ControlElement>() },
     setup(props: RendererProps<ControlElement>) {
         const defaultTableHeaders = [
-            { title: 'Last update', value: 'last_update' },
-            { title: 'Created by', value: 'creator_name' }
+            { title: 'Last Updated', value: 'last_update' },
+            { title: 'Created By', value: 'creator_name' }
         ]
         const filter = ref('')
         const showFilter = ref(false)
@@ -500,6 +505,9 @@ const controlRenderer = defineComponent({
             if (!this.resources.length) return false
             return this.resources.every((r) => this.dataHasEnum(r.public_id))
         },
+        selectedCount(): number {
+            return this.resources.filter((r) => this.dataHasEnum(r.public_id)).length
+        },
         popupHeaders(): { title: string; value: string }[] {
             return this.tableHeaders.filter((h) => !POPUP_HIDDEN_FIELDS.has(h.value))
         }
@@ -649,6 +657,11 @@ export default controlRenderer as Component
     font-size: 15px !important;
     line-height: 1 !important;
     vertical-align: middle;
+}
+
+.resource-list-selected-count {
+    white-space: nowrap;
+    margin-right: 2px;
 }
 
 /* List items */

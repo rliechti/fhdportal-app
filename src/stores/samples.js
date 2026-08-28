@@ -31,7 +31,7 @@ export const useSampleStore = defineStore('samples', {
     },
     getStudySamples(params) {
       return new Promise((resolve, reject) => {
-        HTTP.get('/submissions/' + params.study_id + '/samples')
+        HTTP.get('/submissions/' + encodeURIComponent(params.study_id) + '/samples')
           .then((res) => {
             this.samples = res.data
             resolve(res.data)
@@ -45,7 +45,7 @@ export const useSampleStore = defineStore('samples', {
       let promises = []
       _.forEach(params, (p) => {
         const promise = new Promise((resolve, reject) => {
-          HTTP.delete(`/submissions/${p.study_id}/samples/${p.sample_id}`)
+          HTTP.delete(`/submissions/${encodeURIComponent(p.study_id)}/samples/${encodeURIComponent(p.sample_id)}`)
             .then((res) => {
               const deletedSampleId = res.data
               let idx = _.findIndex(this.samples, function (sa) {
@@ -71,10 +71,10 @@ export const useSampleStore = defineStore('samples', {
       return new Promise((resolve, reject) => {
         const method = params.sample.properties.public_id ? 'put' : 'post'
         const putPath = params.sample.properties.public_id
-          ? `/${params.sample.properties.public_id}`
+          ? `/${encodeURIComponent(params.sample.properties.public_id)}`
           : ''
         HTTP[method](
-          `/submissions/${params.study_id}/samples${putPath}`,
+          `/submissions/${encodeURIComponent(params.study_id)}/samples${putPath}`,
           params.sample,
         )
           .then((res) => {
@@ -97,7 +97,7 @@ export const useSampleStore = defineStore('samples', {
 
     uploadSamples(studyId, formData) {
       return new Promise((resolve, reject) => {
-        HTTP.post(`/submissions/${studyId}/upload-samples`, formData, {
+        HTTP.post(`/submissions/${encodeURIComponent(studyId)}/upload-samples`, formData, {
           headers: {
             'Content-Type': 'multipart/form-data',
           },

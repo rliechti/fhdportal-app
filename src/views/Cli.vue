@@ -34,6 +34,7 @@
 <script>
 import Cli from '@/assets/documentation/Cli.md'
 import { useSubmissionStore } from '@/stores/submissions.js'
+import { notifyError } from '@/utils/notify'
 import '@/assets/styles/github.css'
 export default {
   name: 'CLI',
@@ -52,7 +53,6 @@ export default {
   },
   methods: {
     downloadCli(binary) {
-      let _this = this
       if (binary) {
         let submissionStore = useSubmissionStore()
         submissionStore
@@ -66,12 +66,8 @@ export default {
             link.download = binary
             link.click()
           })
-          .catch((err) => {
-            _this.$notify({
-              title: err.response.statusText,
-              text: err.response.data,
-              type: 'error',
-            })
+          .catch(() => {
+            notifyError('Failed to download the CLI tool. Please try again.')
           })
       }
     },

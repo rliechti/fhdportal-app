@@ -28,7 +28,7 @@ export const useExperimentStore = defineStore('experiments', {
     },
     getStudyExperiments(params) {
       return new Promise((resolve, reject) => {
-        HTTP.get('/submissions/' + params.study_id + '/experiments')
+        HTTP.get('/submissions/' + encodeURIComponent(params.study_id) + '/experiments')
           .then((res) => {
             this.experiments = res.data
             resolve(res.data)
@@ -42,7 +42,7 @@ export const useExperimentStore = defineStore('experiments', {
       let promises = []
       _.forEach(params, (p) => {
         const promise = new Promise((resolve, reject) => {
-          HTTP.delete(`/submissions/${p.study_id}/experiments/${p.experiment_id}`)
+          HTTP.delete(`/submissions/${encodeURIComponent(p.study_id)}/experiments/${encodeURIComponent(p.experiment_id)}`)
             .then((res) => {
               const deletedExperimentId = res.data
               let idx = _.findIndex(this.experiments, function (exp) {
@@ -68,11 +68,11 @@ export const useExperimentStore = defineStore('experiments', {
     editExperiment(params) {
       const method = params.experiment.properties.public_id ? 'put' : 'post'
       const putPath = params.experiment.properties.public_id
-        ? '/' + params.experiment.properties.public_id
+        ? '/' + encodeURIComponent(params.experiment.properties.public_id)
         : ''
       return new Promise((resolve, reject) => {
         HTTP[method](
-          `/submissions/${params.study_id}/experiments${putPath}`,
+          `/submissions/${encodeURIComponent(params.study_id)}/experiments${putPath}`,
           params.experiment,
         )
           .then((res) => {
@@ -102,7 +102,7 @@ export const useExperimentStore = defineStore('experiments', {
 
     uploadExperiments(studyId, formData) {
       return new Promise((resolve, reject) => {
-        HTTP.post(`/submissions/${studyId}/upload-experiments`, formData, {
+        HTTP.post(`/submissions/${encodeURIComponent(studyId)}/upload-experiments`, formData, {
           headers: {
             'Content-Type': 'multipart/form-data',
           },

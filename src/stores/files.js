@@ -47,7 +47,7 @@ export const useFileStore = defineStore('files', {
     getFile(fileId) {
       return new Promise((resolve, reject) => {
         this.dataset = {}
-        HTTP.get(`/files/${fileId}`)
+        HTTP.get(`/files/${encodeURIComponent(fileId)}`)
           .then((res) => {
             this.file = res.data
             resolve(res.data)
@@ -59,7 +59,7 @@ export const useFileStore = defineStore('files', {
     },
     getDatasetsFiles(params) {
       return new Promise((resolve, reject) => {
-        HTTP.get(`/datasets/${params.dataset_id}/files`)
+        HTTP.get(`/datasets/${encodeURIComponent(params.dataset_id)}/files`)
           .then((res) => {
             this.files = res.data
             resolve(res.data)

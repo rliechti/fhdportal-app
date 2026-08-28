@@ -1,6 +1,6 @@
 <template>
     <div class="Runs">
-        <v-sheet min-height="70vh" rounded="lg">
+        <component :is="study_public_id ? 'div' : 'v-sheet'" v-bind="study_public_id ? {} : { minHeight: '70vh', rounded: 'lg' }">
             <v-dialog v-model="modal.status" class="resource-dialog">
                 <modal-resource
                     cas="run"
@@ -15,93 +15,59 @@
                 ></modal-resource>
             </v-dialog>
 
-            <v-container>
+            <component :is="study_public_id ? 'div' : 'v-container'" v-bind="study_public_id ? {} : { fluid: true }">
                 <p v-if="error" class="text-danger">{{ error }}</p>
-                <h1 v-if="!study_public_id" class="text-center">Runs</h1>
+                <PageTitle v-if="!study_public_id" title="Runs" />
                 <p v-if="!loaded || loading" class="text-center mt-3">
                     <em>Loading runs</em> <br />
                     <v-progress-circular color="primary" indeterminate></v-progress-circular>
                 </p>
                 <div v-if="loaded">
                     <div v-if="study_public_id">
-                        <h3 v-if="!loading" class="text-center mb-7 d-flex align-center pe-2">
-                            <v-icon icon="mdi-run"></v-icon>&nbsp;{{ runs.length }} Run<span
-                                v-if="runs.length > 1"
-                                >s</span
-                            >
-                            <span v-if="selectedRuns.length">
-                                - {{ selectedRuns.length }} selected</span
-                            >
-                            <v-spacer></v-spacer>
-                            <v-text-field
-                                v-if="runs.length && !loading"
-                                v-model="search"
-                                label="Search"
-                                density="compact"
-                                prepend-inner-icon="mdi-magnify"
-                                variant="outlined"
-                                hide-details
-                                single-line
-                            ></v-text-field>
-                            <template
-                                v-if="
-                                    study.runTypes.length &&
-                                    study.current_permission.indexOf('edit') > -1 &&
-                                    (study.status_type_id === 'DRA' ||
-                                        study.status_type_id === 'REV')
+                        <div v-if="!loading">
+                            <DataTable
+                                table-id="wizard-runs"
+                                :items="runs"
+                                :headers="tableHeaders"
+                                v-model:search="search"
+                                v-model:selected="selectedRuns"
+                                show-select
+                                item-key="id"
+                                :primary-action="primaryAction"
+                                :primary-action-items="primaryActionItems"
+                                @primary-action="createRun(runTypes[0])"
+                                @primary-action-select="
+                                    (value) =>
+                                        createRun(runTypes.find((t) => t.resource_type_id === value))
                                 "
                             >
-                                <v-btn
-                                    v-for="runType in study.runTypes"
-                                    :key="runType.resource_type_id"
-                                    variant="flat"
-                                    color="primary"
-                                    class="ml-2"
-                                    @click="createRun(runType)"
-                                >
-                                    create new
-                                    {{ runType.label.replace(/([A-Z])/g, ' $1').trim() }}...
-                                </v-btn>
-                            </template>
-                        </h3>
-                        <div v-if="!loading">
-                            <v-data-table
-                                fixed-header
-                                height="calc(40vh)"
-                                style="min-height: 300px"
-                                v-if="runs.length"
-                                v-model="selectedRuns"
-                                :items="runs"
-                                :item-value="'id'"
-                                :items-per-page="25"
-                                :footer-props="{
-                                    'items-per-page-options': [10, 25, 50, 100, -1]
-                                }"
-                                :headers="tableHeaders"
-                                :hover="true"
-                                :search="search"
-                                show-select
-                                density="compact"
-                            >
-                                <!-- <v-data-table v-model="selectedRuns" :items="runs" :headers="runTableHeaders" v-if="runs.length" show-select> -->
-                                <!-- <template v-slot:header.run_file_type="{column}">Tralala</template> -->
+                                <template #selection-actions>
+                                    <ConfirmActionButtons
+                                        v-if="canManageRuns"
+                                        :actions="deleteActions()"
+                                        :confirming="deleteRun.status ? 'delete' : null"
+                                        @arm="deleteRuns('init')"
+                                        @confirm="deleteRuns('save')"
+                                        @cancel="deleteRuns('cancel')"
+                                    />
+                                </template>
+
                                 <template #header.sample_public_id="{}">Sample</template>
                                 <template #header.molecularexperiment_public_id="{}"
                                     >Experiment</template
                                 >
                                 <template #header.sdafile_public_ids="{}">Files</template>
+                                <template #item.public_id="{ item }">
+                                    <CopyIdCell :value="item.public_id" />
+                                </template>
                                 <template #item.title="{ item }">
-                                    {{ item.title }}
-                                    <v-chip
+                                    <v-btn
                                         variant="text"
-                                        class="text-info"
-                                        @click="copy(item.public_id)"
+                                        color="info"
+                                        class="fega-table-btn"
+                                        @click="editRun(item)"
+                                        >{{ item.title }}</v-btn
                                     >
-                                        <v-icon icon="mdi-information"></v-icon>
-                                        <v-tooltip activator="parent" location="top"
-                                            >{{ item.public_id }}
-                                        </v-tooltip>
-                                    </v-chip>
                                 </template>
 
                                 <template #item.sample_public_id="{ item }">
@@ -115,14 +81,14 @@
                                         <v-icon class="mr-1" icon="mdi-eye-outline" />
                                         {{ formatId(item.properties.sample_public_id) }}
                                         <v-tooltip activator="parent" location="top">
-                                            <span
-                                                v-html="
+                                            <span style="white-space: pre-line">
+                                                {{
                                                     getResourceName(
                                                         item.properties.sample_public_id,
                                                         'Sample'
                                                     )
-                                                "
-                                            />
+                                                }}
+                                            </span>
                                         </v-tooltip>
                                     </v-btn>
                                 </template>
@@ -142,167 +108,109 @@
                                             formatId(item.properties.molecularexperiment_public_id)
                                         }}
                                         <v-tooltip activator="parent" location="top">
-                                            <span
-                                                v-html="
+                                            <span style="white-space: pre-line">
+                                                {{
                                                     getResourceName(
                                                         item.properties
                                                             .molecularexperiment_public_id,
                                                         'molecularExperiment'
                                                     )
-                                                "
-                                            />
+                                                }}
+                                            </span>
                                         </v-tooltip>
                                     </v-btn>
                                 </template>
                                 <template #item.run_file_type="{ value }">
                                     <v-chip size="small">
                                         {{ value }}
-                                        <v-tooltip activator="parent" location="top"
-                                            ><span v-html="value.replace(/([A-Z])/g, ' $1').trim()"
-                                        /></v-tooltip>
-                                    </v-chip>
-                                </template>
-                                <template #item.creator_name="{ value }">
-                                    <v-chip color="blue" size="small">
-                                        {{ value.replace(/([^A-Z])/g, '').trim() }}
-                                        <v-tooltip activator="parent" location="top"
-                                            ><span v-html="value.replace(/([A-Z])/g, ' $1').trim()"
-                                        /></v-tooltip>
+                                        <v-tooltip activator="parent" location="top">
+                                            <span style="white-space: pre-line">{{
+                                                humanizeCamelCase(value)
+                                            }}</span>
+                                        </v-tooltip>
                                     </v-chip>
                                 </template>
                                 <template #item.sdafile_public_ids="{ item }">
-                                    <v-chip size="small">
-                                        {{ item.properties.sdafile_public_ids.length }} files
-                                        <v-tooltip activator="parent" location="top"
-                                            ><span
-                                                v-html="
-                                                    item.properties.sdafile_public_ids.join(
-                                                        '<br />'
-                                                    )
-                                                "
-                                        /></v-tooltip>
-                                    </v-chip>
+                                    <CountChip :items="item.properties.sdafile_public_ids" label="file" />
                                 </template>
                                 <template #item.status="{ value }">
-                                    <v-chip :color="getStatusClass(value)" size="small">{{
-                                        value
-                                    }}</v-chip>
+                                    <StatusChip :status="value" />
                                 </template>
-                                <template #item.creation_date="{ value }">
-                                    {{ formatDate(value) }}
-                                </template>
-                                <template #item.last_update="{ value }">
-                                    {{ formatDate(value) }}
-                                </template>
+                                <template #item.creation_date="{ value }"
+                                    ><DateCell :value="value"
+                                /></template>
+                                <template #item.last_update="{ value }"><DateCell :value="value" /></template>
                                 <template #item.actions="{ item }">
-                                    <p class="text-center" style="white-space: nowrap">
-                                        <v-btn
-                                            :disabled="
-                                                item.current_permission &&
-                                                item.current_permission.indexOf('edit') < 0 &&
-                                                item.current_permission.indexOf('review') < 0
-                                            "
-                                            size="small"
-                                            style="display: inline-flex; margin-bottom: 1px"
-                                            color="info"
-                                            variant="outlined"
-                                            @click="editRun(item)"
-                                            ><v-icon
-                                                class="mr-1"
-                                                :icon="
-                                                    item.current_permission.indexOf('edit') < 0 &&
-                                                    item.current_permission.indexOf('review') > -1
-                                                        ? 'mdi-eye'
-                                                        : 'mdi-pencil'
-                                                "
-                                            ></v-icon
-                                            >{{
-                                                (item.current_permission.indexOf('edit') < 0 &&
-                                                    item.current_permission.indexOf('review') >
-                                                        -1) ||
-                                                study.status_type_id !== 'DRA'
-                                                    ? 'review'
-                                                    : 'edit'
-                                            }}
-                                        </v-btn>
-                                    </p>
+                                    <ResourceActionButton :item="item" :study="study" @click="editRun(item)" />
                                 </template>
-                            </v-data-table>
 
-                            <div v-else class="text-center pt-2">
-                                A run links a sample, a sequencing experiment, and the generated
-                                data files.<br />
-                                Use runs to associate biological samples with technical experiments
-                                and upload the corresponding raw data files (typically FASTQ, BAM,
-                                or CRAM files generated directly by the sequencing instrument)
-                            </div>
-                            <p
-                                v-if="
-                                    study.runTypes.length &&
-                                    study.current_permission.indexOf('edit') > -1 &&
-                                    (study.status_type_id === 'DRA' ||
-                                        study.status_type_id === 'REV')
-                                "
-                                class="text-center"
-                            >
-                                <template v-if="selectedRuns.length">
-                                    <v-btn
-                                        v-if="!deleteRun.status"
-                                        class="ml-3"
-                                        color="error"
-                                        variant="flat"
-                                        @click="deleteRuns('init')"
-                                        >delete {{ selectedRuns.length }} selected
-                                        <span v-if="selectedRuns.length > 1"> Runs</span
-                                        ><span v-else> Run</span></v-btn
-                                    >
-                                    <template v-if="deleteRun.status">
-                                        <v-btn
-                                            class="ml-3"
-                                            color="error"
-                                            variant="flat"
-                                            @click="deleteRuns('save')"
-                                            >confirm deletion of {{ selectedRuns.length }}
-                                            <span v-if="selectedRuns.length > 1">Runs</span
-                                            ><span v-else>Run</span></v-btn
-                                        >
-                                        <v-btn
-                                            class="ml-3"
-                                            color="secondary"
-                                            variant="outlined"
-                                            @click="deleteRuns('cancel')"
-                                            >cancel</v-btn
-                                        >
-                                    </template>
+                                <template #no-data>
+                                    <div class="text-center pt-2">
+                                        A run links a sample, a sequencing experiment, and the
+                                        generated data files.<br />
+                                        Use runs to associate biological samples with technical
+                                        experiments and upload the corresponding raw data files
+                                        (typically FASTQ, BAM, or CRAM files generated directly by
+                                        the sequencing instrument)
+                                    </div>
                                 </template>
-                            </p>
+                            </DataTable>
                         </div>
                     </div>
                 </div>
-            </v-container>
-        </v-sheet>
+            </component>
+        </component>
     </div>
 </template>
 
 <script>
 import { defineComponent } from 'vue'
-import useClipboard from 'vue-clipboard3'
+import { notifyError } from '@/utils/notify'
 import { useSubmissionStore } from '@/stores/submissions.js'
 import { useRunStore } from '@/stores/runs.js'
 import { useExperimentStore } from '@/stores/experiments.js'
 import { useSampleStore } from '@/stores/samples.js'
 import { useSchemaStore } from '@/stores/schemas.js'
 import ModalResource from '@/components/modalResource.vue'
+import PageTitle from '@/components/shared/PageTitle.vue'
+import DataTable from '@/components/shared/DataTable.vue'
+import CopyIdCell from '@/components/shared/datatable/cells/CopyIdCell.vue'
+import StatusChip from '@/components/shared/datatable/cells/StatusChip.vue'
+import DateCell from '@/components/shared/datatable/cells/DateCell.vue'
+import CountChip from '@/components/shared/datatable/cells/CountChip.vue'
+import ResourceActionButton from '@/components/shared/datatable/cells/ResourceActionButton.vue'
+import ConfirmActionButtons from '@/components/shared/datatable/cells/ConfirmActionButtons.vue'
+import { useResourceTableHeaders } from '@/composables/useResourceTableHeaders'
+import { humanizeCamelCase } from '@/utils/format'
 import { mapState } from 'pinia'
 import _ from 'lodash'
-import moment from 'moment'
 
 export default defineComponent({
     name: 'Runs',
     components: {
-        ModalResource
+        ModalResource,
+        PageTitle,
+        DataTable,
+        CopyIdCell,
+        StatusChip,
+        DateCell,
+        CountChip,
+        ResourceActionButton,
+        ConfirmActionButtons
     },
     props: ['study_id'],
+    setup() {
+        const { headers: tableHeaders, build: buildTableHeaders } = useResourceTableHeaders({
+            source: 'data_schema.required',
+            defaultHeaders: [
+                { title: 'Status', value: 'status', width: '1%' },
+                { title: 'Last Updated', value: 'last_update', width: '1%', sortable: true },
+                { title: 'Created By', value: 'creator_name', width: '1%', sortable: true },
+                { title: 'Actions', value: 'actions', width: '1%', align: 'center' }
+            ]
+        })
+        return { tableHeaders, buildTableHeaders, humanizeCamelCase }
+    },
     data() {
         return {
             runStore: null,
@@ -327,38 +235,6 @@ export default defineComponent({
             loading: false,
             study_public_id: null,
             uploadedRuns: [],
-            defaultTableHeaders: [
-                // {
-                //         title: 'ID',
-                //         value: 'public_id'
-                // },
-                // {
-                // 		title: 'Run type',
-                // 		value: 'run_type'
-                // },
-                {
-                    title: 'Status',
-                    value: 'status'
-                },
-                // {
-                //     title: 'Creation date',
-                //     value: 'creation_date'
-                // },
-                {
-                    title: 'Last update',
-                    value: 'last_update'
-                },
-                {
-                    title: 'Created by',
-                    value: 'creator_name'
-                },
-                {
-                    title: '',
-                    value: 'actions'
-                }
-            ],
-            tableHeaders: [],
-            upload: false,
             run_type: null,
             files: null,
             filesUploading: false,
@@ -371,20 +247,39 @@ export default defineComponent({
     },
     computed: {
         ...mapState(useSubmissionStore, ['study']),
-        ...mapState(useSubmissionStore, ['statusTypes']),
         ...mapState(useRunStore, ['runs']),
         ...mapState(useSampleStore, ['samples']),
         ...mapState(useExperimentStore, ['experiments']),
-        ...mapState(useSchemaStore, ['schemas'])
+        ...mapState(useSchemaStore, ['schemas']),
+        runTypes() {
+            return this.study?.runTypes ?? []
+        },
+        canManageRuns() {
+            return this.study.status_type_id === 'DRA' || this.study.status_type_id === 'REV'
+        },
+        primaryAction() {
+            if (!this.canManageRuns || !this.runTypes.length || this.deleteRun.status) return null
+            if (this.runTypes.length === 1) {
+                return {
+                    label: `New ${humanizeCamelCase(this.runTypes[0].label)}`,
+                    icon: 'mdi-plus'
+                }
+            }
+            return { label: 'Add New', icon: 'mdi-plus' }
+        },
+        primaryActionItems() {
+            if (!this.canManageRuns || this.deleteRun.status || this.runTypes.length <= 1) return []
+            return this.runTypes.map((t) => ({
+                title: humanizeCamelCase(t.label),
+                value: t.resource_type_id
+            }))
+        }
     },
     mounted() {
         this.submissionStore = useSubmissionStore()
         this.runStore = useRunStore()
         this.sampleStore = useSampleStore()
         this.experimentStore = useExperimentStore()
-        _.forEach(this.defaultTableHeaders, function (sh) {
-            sh.headerProps = { style: 'font-weight: 600' }
-        })
         if (this.study) {
             this.submissionStore.getStatusTypes()
             this.study_public_id = this.study.public_id
@@ -407,22 +302,21 @@ export default defineComponent({
         }
     },
     methods: {
-        async copy(msg) {
-            const { toClipboard } = useClipboard()
-            try {
-                await toClipboard(msg)
-                this.$notify({ type: 'success', text: 'Public ID copied to clipboard' })
-            } catch (e) {
-                console.error(e)
-            }
+        deleteActions() {
+            return [
+                {
+                    key: 'delete',
+                    label: 'Delete',
+                    confirmLabel: 'Confirm Deletion',
+                    color: 'error',
+                    variant: 'flat'
+                }
+            ]
         },
 
         close(e) {
             this.resetModal()
-            console.info(this.modal.permissions)
             if (e) {
-                // if (e && this.modal.permissions.indexOf('edit') > -1) {
-                //Get samples because when create sample via file, new samples are not displayed here. Idem for edition.
                 this.getRuns()
             }
         },
@@ -478,13 +372,9 @@ export default defineComponent({
                         this.deleteRun.status = false
                         this.selectedRuns = []
                     })
-                    .catch((err) => {
+                    .catch(() => {
                         this.deleteRun.status = false
-                        this.$notify({
-                            title: err.response.statusText,
-                            text: err.response.data,
-                            type: 'error'
-                        })
+                        notifyError('Failed to delete the selected run(s). Please try again.')
                     })
             }
         },
@@ -506,13 +396,11 @@ export default defineComponent({
             if (this.files) {
                 this.filesUploading = true
                 let formData = new FormData()
-                // files
                 let fidx = 0
                 for (let file of this.files) {
                     fidx++
                     formData.append(`file${fidx}`, file, file.name)
                 }
-                // additional data
                 formData.append('nb_files', fidx)
                 formData.append('resource_type_id', this.run_type.resource_type_id)
                 this.runStore
@@ -525,13 +413,9 @@ export default defineComponent({
                         this.getRuns()
                         this.filesUploading = false
                     })
-                    .catch((err) => {
+                    .catch(() => {
                         this.filesUploading = false
-                        this.$notify({
-                            title: err.response.statusText,
-                            text: err.response.data,
-                            type: 'error'
-                        })
+                        notifyError('Failed to upload run(s). Please try again.')
                     })
             }
         },
@@ -544,63 +428,18 @@ export default defineComponent({
                         this.$emit('updateStudy')
                         this.loading = false
                         this.loaded = true
-                        this.setTableHeaders()
+                        this.buildTableHeaders(this.runs, 'run_type')
                     })
-                    .catch((err) =>
-                        this.$notify({
-                            title: err.response.statusText,
-                            text: err.response.data,
-                            type: 'error'
-                        })
-                    )
+                    .catch(() => notifyError('Failed to load runs. Please try again.'))
             } else {
                 this.runStore
                     .getRuns()
                     .then(() => {
                         this.loaded = true
-                        this.setTableHeaders()
+                        this.buildTableHeaders(this.runs, 'run_type')
                     })
-                    .catch((err) =>
-                        this.$notify({
-                            title: err.response.statusText,
-                            text: err.response.data,
-                            type: 'error'
-                        })
-                    )
+                    .catch(() => notifyError('Failed to load runs. Please try again.'))
             }
-        },
-        setTableHeaders() {
-            this.tableHeaders = []
-            let runTypes = []
-            _.forEach(this.runs, (e) => {
-                if (runTypes.indexOf(e.run_type) === -1) {
-                    runTypes.push(e.run_type)
-                }
-            })
-            const schemaStore = useSchemaStore()
-            schemaStore.getSchemas().then((schemas) => {
-                _.forEach(runTypes, (runType) => {
-                    if (schemas[runType] !== undefined) {
-                        if (schemas[runType].data_schema.required !== undefined) {
-                            _.forEach(schemas[runType].data_schema.required, (d) => {
-                                if (this.tableHeaders.indexOf(d) == -1)
-                                    this.tableHeaders.push({
-                                        headerProps: { style: 'font-weight: 600' },
-                                        value: d,
-                                        title: (d + '')
-                                            .replace(/_/g, ' ')
-                                            .replace(/^([a-z])|\s+([a-z])/g, function ($1) {
-                                                return $1.toUpperCase()
-                                            })
-                                    })
-                            })
-                        }
-                    }
-                })
-                for (let i = 0; i < this.defaultTableHeaders.length; i++) {
-                    this.tableHeaders.push(this.defaultTableHeaders[i])
-                }
-            })
         },
 
         getSamples() {
@@ -610,26 +449,14 @@ export default defineComponent({
                     .then(() => {
                         this.loaded = true
                     })
-                    .catch((err) =>
-                        this.$notify({
-                            title: err.response.statusText,
-                            text: err.response.data,
-                            type: 'error'
-                        })
-                    )
+                    .catch(() => notifyError('Failed to load samples. Please try again.'))
             } else {
                 this.runStore
                     .getRuns()
                     .then(() => {
                         this.loaded = true
                     })
-                    .catch((err) =>
-                        this.$notify({
-                            title: err.response.statusText,
-                            text: err.response.data,
-                            type: 'error'
-                        })
-                    )
+                    .catch(() => notifyError('Failed to load samples. Please try again.'))
             }
         },
         getExperiments() {
@@ -639,26 +466,14 @@ export default defineComponent({
                     .then(() => {
                         this.loaded = true
                     })
-                    .catch((err) =>
-                        this.$notify({
-                            title: err.response.statusText,
-                            text: err.response.data,
-                            type: 'error'
-                        })
-                    )
+                    .catch(() => notifyError('Failed to load experiments. Please try again.'))
             } else {
                 this.experimentStore
                     .getExperiments()
                     .then(() => {
                         this.loaded = true
                     })
-                    .catch((err) =>
-                        this.$notify({
-                            title: err.response.statusText,
-                            text: err.response.data,
-                            type: 'error'
-                        })
-                    )
+                    .catch(() => notifyError('Failed to load experiments. Please try again.'))
             }
         },
         updateData(event) {
@@ -673,9 +488,6 @@ export default defineComponent({
             this.modal.type = { name: '', label: '' }
             this.modal.hide_upload = false
         },
-        formatDate(value) {
-            return moment(value).format('DD.MM.YYYY')
-        },
         formatId(value) {
             return value.substring(6, 7) + '0' + value.replace(/^CHFEGA.0+/, '')
         },
@@ -688,14 +500,6 @@ export default defineComponent({
                         this.ui_schema = schemas[run_type].ui_schema
                     }
                 })
-            }
-        },
-        getStatusClass(status_type) {
-            let idx = _.findIndex(this.statusTypes, (sT) => {
-                return sT.name === status_type
-            })
-            if (idx > -1) {
-                return this.statusTypes[idx].class_name
             }
         },
         showResource(publicId, resourceType) {

@@ -2,6 +2,7 @@
 import Home from '@/views/Home.vue'
 import Submission from '@/views/Submission.vue'
 import Files from '@/views/Files.vue'
+import Keys from '@/views/Keys.vue'
 import Studies from '@/views/Studies.vue'
 import Study from '@/views/Study.vue'
 import SubmissionStudy from '@/views/SubmissionStudy.vue'
@@ -16,7 +17,10 @@ import Teams from '@/views/Teams.vue'
 import Codebase from '@/views/Codebase.vue'
 import Contacts from '@/views/Contacts.vue'
 import Users from '@/views/admin/Users.vue'
-import Requests from '@/views/admin/Requests.vue'
+import Requests from '@/views/Requests.vue'
+import AdminRequests from '@/views/admin/Requests.vue'
+
+import Reviews from '@/views/admin/Reviews.vue'
 
 const MainRoutes = {
     path: '/main',
@@ -38,6 +42,14 @@ const MainRoutes = {
         path: '/files',
         name: 'Files',
         component: Files,
+        meta: {
+          allowAnonymous: false,
+        },
+      },
+      {
+        path: '/keys',
+        name: 'Keys',
+        component: Keys,
         meta: {
           allowAnonymous: false,
         },
@@ -90,6 +102,14 @@ const MainRoutes = {
           allowAnonymous: false,
         },
       },
+      {
+        path: '/requests',
+        name: 'Requests',
+        component: Requests,
+        meta: {
+          allowAnonymous: false,
+        }
+      },      
       {
         path: '/metadata',
         name: 'MetadataView',
@@ -160,14 +180,25 @@ const MainRoutes = {
         component: Users,
         meta: {
           allowAnonymous: false,
+          requiresRole: 'admin-fega',
         },
       },
       {
         path: '/admin/requests',
-        name: 'Requests',
-        component: Requests,
+        name: 'AdminRequests',
+        component: AdminRequests,
         meta: {
           allowAnonymous: false,
+          requiresRole: 'admin-fega',
+        },
+      },
+      {
+        path: '/admin/reviews',
+        name: 'Reviews',
+        component: Reviews,
+        meta: {
+          allowAnonymous: false,
+          requiresRole: 'admin-fega',
         },
       },
     ]

@@ -105,6 +105,7 @@
 
 <script>
 import { defineComponent } from 'vue'
+import { notifyError } from '@/utils/notify'
 import { useSubmissionStore } from '@/stores/submissions.js'
 export default defineComponent({
   name: 'Permissions',
@@ -152,12 +153,8 @@ export default defineComponent({
           this.$emit('update:study', study)
           this.$notify({ title: 'User deleted successfully', type: 'success' })
         })
-        .catch((err) =>
-          this.$notify({
-            title: err.response.statusText,
-            text: err.response.data,
-            type: 'error',
-          }),
+        .catch(() =>
+          notifyError('Failed to delete user. Please try again.'),
         )
     },
     close() {
@@ -182,12 +179,8 @@ export default defineComponent({
               : 'User added successfully'
           this.$notify({ title: message, type: 'success' })
         })
-        .catch((err) =>
-          this.$notify({
-            title: err.response.statusText,
-            text: err.response.data,
-            type: 'error',
-          }),
+        .catch(() =>
+          notifyError('Failed to save user permissions. Please try again.'),
         )
     },
     searchUser() {
@@ -207,12 +200,8 @@ export default defineComponent({
             })
           }
         })
-        .catch((err) =>
-          this.$notify({
-            title: err.response.statusText,
-            text: err.response.data,
-            type: 'error',
-          }),
+        .catch(() =>
+          notifyError('Failed to search for user. Please try again.'),
         )
     },
     init() {

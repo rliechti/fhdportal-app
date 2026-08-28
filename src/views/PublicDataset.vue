@@ -1,196 +1,254 @@
 <template>
-  <div class="Datasety">
-    <v-sheet min-height="70vh" rounded="lg">
-    <v-dialog v-model="modal.status" width="50%">
-      <modal-request :dataset_id="modal.dataset_id" :dataset_title="modal.title" @closeModal="closeModal"></modal-request>
-    </v-dialog>    
-    <v-container>
-    <v-row class="mt-10">
-      <v-col cols="8" class="offset-2">
-        <v-card color="info" variant = "outlined" v-if="loading">
-          <h5 class="text-center py-3">loading...</h5>
-        </v-card>
-        <v-card color="warning" v-else-if="errorMsg">
-          <h3 class="text-center py-3">{{errorMsg}}</h3>
-        </v-card>
-        <v-card v-else>
-          <v-card-title>{{dataset.title}}
-			<!--TODO -->
-          <!-- <v-btn size="small" class="mr-3 float-right" color="secondary" @click="downloadDataset(dataset)">download</v-btn>-->
-		  </v-card-title> 
-          <v-card-subtitle>{{dataset.public_id}}</v-card-subtitle>
-          <v-card-text>
-            <v-row>
-              <template v-for="(v,k) in dataset" :key="k">
-                <template v-if="!Array.isArray(v) && k !== 'id' && k !== 'policy_id' && typeof v !== 'object'">
-                  <v-col cols="4 text-right"><strong>{{k.replace(/_/g," ")}}:</strong></v-col>
-                  <v-col cols="8">
-                    <router-link :to="`/studies/${v}`" v-if="k==='study_public_id'">{{v}}</router-link>
-                    <template v-else>{{v}}</template>
-                  </v-col>                  
+    <div class="Dataset">
+        <v-sheet min-height="70vh" rounded="lg">
+            <v-dialog v-model="modal.status" class="resource-dialog">
+                <modal-request
+                    :dataset_id="modal.dataset_id"
+                    :dataset_title="modal.title"
+                    :dac_request_id="modal.dac_request_id"
+                    @closeModal="closeModal"
+                ></modal-request>
+            </v-dialog>
+            <v-container fluid>
+                <PageTitle v-if="!loading && !errorMsg">{{ dataset.title }}</PageTitle>
+
+                <v-card v-if="loading" color="info" variant="outlined" class="mx-auto state-card">
+                    <h5 class="text-center py-3">loading...</h5>
+                </v-card>
+                <v-card v-else-if="errorMsg" color="error" variant="outlined" class="mx-auto state-card">
+                    <h3 class="text-center py-3">{{ errorMsg }}</h3>
+                </v-card>
+
+                <template v-else>
+                    <v-card class="mb-8" elevation="10">
+                        <v-table class="property-table">
+                            <tbody>
+                                <PropertyRow label="Public ID">
+                                    <span class="d-flex flex-wrap align-center ga-2">
+                                        <CopyIdCell :value="dataset.public_id" notify-label="Dataset ID" />
+                                        <span class="fega-dt-cell--mono">{{ dataset.public_id }}</span>
+                                    </span>
+                                </PropertyRow>
+                                <PropertyRow label="Title" :value="dataset.title" />
+                                <PropertyRow
+                                    v-if="dataset.description"
+                                    label="Description"
+                                    :value="dataset.description"
+                                />
+                                <PropertyRow
+                                    v-if="dataset.dataset_types && dataset.dataset_types.length"
+                                    label="Dataset Types"
+                                >
+                                    <div class="d-flex flex-wrap ga-1">
+                                        <v-chip
+                                            v-for="type in dataset.dataset_types"
+                                            :key="type"
+                                            size="small"
+                                            variant="tonal"
+                                            class="type-chip"
+                                            >{{ type }}</v-chip
+                                        >
+                                    </div>
+                                </PropertyRow>
+                                <PropertyRow v-if="dataset.released_date" label="Released">
+                                    <DateCell :value="dataset.released_date" />
+                                </PropertyRow>
+                                <PropertyRow v-if="dataset.study_public_id" label="Study">
+                                    <router-link :to="`/studies/${dataset.study_public_id}`">{{
+                                        dataset.study_public_id
+                                    }}</router-link>
+                                </PropertyRow>
+                                <PropertyRow label="Files" :value="dataset.files ? dataset.files.length : 0" />
+                                <PropertyRow v-if="dataset.policy" label="Policy">
+                                    <strong>{{ dataset.policy.title }}</strong> from
+                                    {{ dataset.policy.dac.name }}
+                                </PropertyRow>
+                                <PropertyRow
+                                    v-for="xa in dataset.extra_attributes"
+                                    :key="xa.tag"
+                                    :label="xa.tag.replace(/_/g, ' ')"
+                                    :value="xa.value"
+                                />
+                            </tbody>
+                        </v-table>
+                        <v-divider></v-divider>
+                        <v-card-actions class="justify-center py-4">
+                            <v-btn
+                                v-if="
+                                    dataset.request === undefined ||
+                                    dataset.request === null ||
+                                    dataset.request.dataset_id === undefined
+                                "
+                                color="primary"
+                                variant="tonal"
+                                @click="requestAccessForm(dataset.public_id, dataset.title)"
+                            >
+                                Request Access
+                            </v-btn>
+                            <v-btn
+                                v-else-if="dataset.request.request_status === 'daa_pending'"
+                                color="warning"
+                                variant="tonal"
+                                @click="
+                                    resumeAccessRequest(
+                                        dataset.public_id,
+                                        dataset.title,
+                                        dataset.request.dac_request_id
+                                    )
+                                "
+                            >
+                                Resume Access Request
+                            </v-btn>
+                            <strong
+                                v-else
+                                :class="
+                                    dataset.request.request_status === 'approved'
+                                        ? 'text-success'
+                                        : dataset.request.request_status === 'rejected'
+                                          ? 'text-error'
+                                          : 'text-info'
+                                "
+                            >
+                                Access request {{ dataset.request.request_status }} on
+                                {{ formatDate(dataset.request.action_time) }}
+                            </strong>
+                        </v-card-actions>
+                    </v-card>
+
+                    <v-card elevation="10">
+                        <v-card-item class="py-4 px-6">
+                            <v-card-title class="text-h6 pa-0">Files</v-card-title>
+                        </v-card-item>
+                        <v-divider></v-divider>
+                        <v-card-text>
+                            <DataTable
+                                table-id="public-dataset-files"
+                                :items="dataset.files || []"
+                                :headers="fileHeaders"
+                            >
+                                <template #item.public_id="{ item }">
+                                    <CopyIdCell :value="item.public_id" notify-label="Public File ID" />
+                                </template>
+                                <template #item.title="{ value }">
+                                    <TruncatedText :text="value" />
+                                </template>
+                                <template #item.filesize="{ value }">{{
+                                    formatFileSize(value)
+                                }}</template>
+                            </DataTable>
+                        </v-card-text>
+                    </v-card>
                 </template>
-                <template v-else-if="k==='extra_attributes'">
-                  <template v-for="xa in v" :key="xa.tag">
-                    <v-col cols="4 text-right"><strong>{{xa.tag.replace(/_/g," ")}}:</strong></v-col>
-                    <v-col cols="8">{{xa.value}}</v-col>                  
-                  </template>
-                </template>
-                <template v-else-if="k==='dataset_types'">
-                  <v-col cols="4 text-right"><strong>{{k.replace(/_/g," ")}}:</strong></v-col>
-                  <v-col cols="8"><v-chip size="small" v-for="dataset_type in v" :key = "`${k}_${dataset_type}`">{{dataset_type}}</v-chip></v-col>
-                  
-                </template>
-                <template v-else-if="k==='policy'">
-                  <v-col cols="4 text-right"><strong>{{k.replace(/_/g," ")}}:</strong></v-col>
-                  <v-col cols="8"><strong>{{v.title}}</strong> from {{v.dac.name}}</v-col>
-                  
-                </template>
-              </template>
-            </v-row>
-            <p class="text-center my-6">
-              <v-btn size="small" color="primary" @click="requestAccessForm(dataset.public_id, dataset.title)" v-if="dataset.request === undefined || dataset.request === null || dataset.request.dataset_id === undefined">request access...</v-btn>
-              <template v-else>
-                <strong :class="dataset.request.request_status==='approved'?'text-success':(dataset.request.request_status==='rejected'?'text-error':'text-info')">Access request {{dataset.request.request_status}} on {{formatDate(dataset.request.action_time)}}</strong>
-              </template>
-            </p>
-          </v-card-text>
-          <v-divider></v-divider>
-          <v-card-title v-if="dataset.files !== undefined">Files ({{dataset.files.length}})</v-card-title>
-          <v-card-text>
-          <v-table
-             height="600px"
-             fixed-header
-             density="compact"
-           >
-             <thead>
-               <tr>
-                 <th class="text-left">
-                   Public ID
-                 </th>
-                 <th class="text-left">
-                   Name
-                 </th>
-                 <th class="text-left">
-                   Size
-                 </th>
-               </tr>
-             </thead>
-             <tbody>
-               <tr
-                 v-for="item in dataset.files"
-                 :key="item.public_id"
-               >
-                 <td>{{ item.public_id }}</td>
-                 <td><small>{{ item.title }}</small></td>
-                 <td nowrap>{{ formatFileSize(item.filesize) }}</td>
-               </tr>
-             </tbody>
-           </v-table>
-          </v-card-text>
-        </v-card>
-      </v-col>
-    </v-row>
-    </v-container>
-    </v-sheet>
-  </div>
+            </v-container>
+        </v-sheet>
+    </div>
 </template>
 
 <script>
 import { defineComponent } from 'vue'
 import { mapState } from 'pinia'
 import { useDatasetStore } from '@/stores/datasets.js'
-import { useDacStore } from '@/stores/dacs.js'
-import { useAuthStore } from '@/stores/auth'
-import { JsonForms } from '@jsonforms/vue'
-import { vuetifyRenderers } from '@jsonforms/vue-vuetify'
-import UserKeys from '@/components/UserKeys.vue'
 import ModalRequest from '@/components/modalRequest.vue'
-import moment from 'moment'
-import _ from 'lodash'
-const renderers = [
-  ...vuetifyRenderers
-]
+import PageTitle from '@/components/shared/PageTitle.vue'
+import PropertyRow from '@/components/shared/PropertyRow.vue'
+import DataTable from '@/components/shared/DataTable.vue'
+import TruncatedText from '@/components/shared/TruncatedText.vue'
+import CopyIdCell from '@/components/shared/datatable/cells/CopyIdCell.vue'
+import DateCell from '@/components/shared/datatable/cells/DateCell.vue'
+import { fitColumn, flexColumn, numericColumn } from '@/utils/dataTableHeaders'
+import { formatFileSize } from '@/utils/format'
+import { formatDate } from '@/utils/dates'
 
 export default defineComponent({
-  name: 'Dataset',
-  components: {
-    JsonForms,
-    UserKeys,
-    ModalRequest
-  },
-  computed: {
-    ...mapState(useDatasetStore, ['dataset']),
-    ...mapState(useAuthStore, ['user'])
-  },
-  data() {
-    return {
-      loading: false,
-      errorMsg: '',
-      modal: { status: false, dataset_id: null, title: '' }
+    name: 'Dataset',
+    components: {
+        ModalRequest,
+        PageTitle,
+        PropertyRow,
+        DataTable,
+        TruncatedText,
+        CopyIdCell,
+        DateCell
+    },
+    computed: {
+        ...mapState(useDatasetStore, ['dataset'])
+    },
+    data() {
+        return {
+            loading: true,
+            errorMsg: '',
+            modal: { status: false, dataset_id: null, title: '', dac_request_id: null },
+            fileHeaders: [
+                fitColumn({ title: 'ID', value: 'public_id', align: 'center' }),
+                flexColumn({ title: 'Name', value: 'title' }),
+                numericColumn({ title: 'Size', value: 'filesize' })
+            ]
+        }
+    },
+    methods: {
+        formatFileSize,
+        formatDate,
+        getDataset() {
+            const datasetId = this.$route.params.dataset_id
+            const datasetStore = useDatasetStore()
+            datasetStore
+                .getDataset(datasetId)
+                .then(() => {
+                    this.loading = false
+                    this.errorMsg = ''
+                })
+                .catch((err) => {
+                    this.loading = false
+                    if (err.status === 404) {
+                        this.errorMsg = 'Unknown dataset'
+                    } else {
+                        this.errorMsg = 'Error retrieving the dataset'
+                    }
+                })
+        },
+        closeModal() {
+            this.modal.status = false
+            this.getDataset()
+        },
+        requestAccessForm(dataset_id, title) {
+            this.modal.status = true
+            this.modal.dataset_id = dataset_id
+            this.modal.title = title
+            this.modal.dac_request_id = null
+        },
+        resumeAccessRequest(dataset_id, title, dacRequestId) {
+            this.modal.status = true
+            this.modal.dataset_id = dataset_id
+            this.modal.title = title
+            this.modal.dac_request_id = dacRequestId
+        }
+    },
+    mounted() {
+        this.getDataset()
     }
-  },
-  methods: {
-    getDataset(){
-      const datasetId = this.$route.params.dataset_id
-      const datasetStore = useDatasetStore()      
-      datasetStore.getDataset(datasetId).then(() => {
-        this.loading = false
-        this.errorMsg = '';
-      }).catch(err => {
-        this.loading = false
-        if (err.status === 404){
-          this.errorMsg = "Unknown dataset"
-        }
-        else{
-          this.errorMsg = "Error retrieving the dataset"
-        }
-      })
-    },
-    closeModal(){
-      this.modal.status = false
-      this.getDataset()
-    },
-    formatFileSize(bytes, decimalPoint = 2) {
-      if (bytes === 0) return '0 Bytes';
-      const k = 1024; // Use 1024 for binary-based sizes
-      const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
-      const i = Math.floor(Math.log(bytes) / Math.log(k));
-      return parseFloat((bytes / Math.pow(k, i)).toFixed(decimalPoint)) + ' ' + sizes[i];
-    },
-    requestAccessForm (dataset_id, title){
-      this.modal.status = true
-      this.modal.dataset_id = dataset_id
-      this.modal.title = title
-    },
-    formatDate(value) {
-      return moment(value).format('DD.MM.YYYY')
-    },
-    downloadDataset(dataset){
-        let _this = this
-        const datasetStore = useDatasetStore()   
-        datasetStore
-          .downloadDataset(dataset.public_id)
-          .then((res) => {
-            let blob = new Blob([res.data], { type: 'application/vnd.ms-excel' })
-            let link = document.createElement('a')
-            link.href = window.URL.createObjectURL(blob)
-            link.download = 'dataset_'+dataset.public_id+'.xlsx'
-            link.click()
-            // _this.downloading = false
-          })
-          .catch((err) =>
-            this.$notify({
-              title: err.response.statusText,
-              text: err.response.data,
-              type: 'error',
-            }),
-          )
-      },
-  },
-  mounted(){
-
-    this.getDataset();
-    
-  }
 })
 </script>
+
+<style scoped>
+.state-card {
+    max-width: 480px;
+}
+
+.property-table :deep(table) {
+    table-layout: fixed;
+    width: 100%;
+}
+
+.type-chip {
+    height: auto;
+    min-height: 24px;
+    overflow: visible;
+    white-space: normal;
+}
+
+:deep(.type-chip .v-chip__content) {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: unset;
+}
+</style>

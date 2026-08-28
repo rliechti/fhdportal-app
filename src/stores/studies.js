@@ -10,7 +10,7 @@ export const useStudyStore = defineStore('studies', {
   actions: {
     getPubmeds(pmid) {
       return new Promise((resolve, reject) => {
-        HTTP.get(`/pubmeds/${pmid}`)
+        HTTP.get(`/pubmeds/${encodeURIComponent(pmid)}`)
           .then((res) => {
             resolve(res.data)
           })
@@ -40,7 +40,7 @@ export const useStudyStore = defineStore('studies', {
           if (this.study.id == study_id) {
             resolve(this.study)
           } else {
-            HTTP.get('/studies/' + study_id)
+            HTTP.get('/studies/' + encodeURIComponent(study_id))
               .then((res) => {
                 this.study = res.data
                 resolve(res.data)

@@ -1,8 +1,8 @@
 <template>
   <div class="Submission">
     <v-sheet min-height="70vh" rounded="lg">
-      <v-container>
-        <h1 class="text-center">Terms Of Use</h1>
+      <v-container fluid>
+        <PageTitle title="Terms of Use" />
       </v-container>
     </v-sheet>
   </div>
@@ -10,7 +10,11 @@
 
 <script>
 import { defineComponent } from 'vue'
+import PageTitle from '@/components/shared/PageTitle.vue'
 export default defineComponent({
   name: 'TermsOfUse',
+  components: {
+    PageTitle,
+  },
 })
 </script>

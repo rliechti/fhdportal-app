@@ -1,0 +1,209 @@
+.fega-data-table {
+    --fega-dt-mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    --fega-dt-border: thin solid rgba(var(--v-border-color), var(--v-border-opacity));
+
+    &__toolbar {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 12px;
+        min-height: 40px;
+    }
+    &__toolbar-start,
+    &__toolbar-end {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px;
+    }
+    &__toolbar-start {
+        flex: 1 1 auto;
+        min-width: 0;
+    }
+    &__toolbar-end {
+        flex: 0 0 auto;
+        margin-inline-start: auto;
+    }
+    &__search {
+        flex: 0 1 320px;
+        min-width: 180px;
+    }
+
+    &__frame {
+        overflow: hidden;
+    }
+
+    &__selection {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        min-height: 48px;
+        padding: 6px 8px 6px 16px;
+        background: rgb(var(--v-theme-lightprimary));
+        color: rgb(var(--v-theme-on-lightprimary));
+        border-bottom: var(--fega-dt-border);
+    }
+    &__selection-count {
+        font-size: 0.9375rem;
+        font-weight: 600;
+    }
+
+    &__footer {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 10px 12px;
+        border-top: var(--fega-dt-border);
+    }
+    &__footer-start,
+    &__footer-end {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    &__per-page {
+        flex: 0 0 88px;
+        width: 88px;
+    }
+    &__per-page-label,
+    &__range {
+        font-size: 0.875rem;
+        white-space: nowrap;
+        color: rgba(var(--v-theme-on-surface), var(--v-medium-emphasis-opacity));
+    }
+    &__range {
+        margin-inline-end: 4px;
+    }
+
+    .v-pagination .v-btn {
+        box-shadow: none;
+    }
+
+    @media (max-width: 599px) {
+        &__footer {
+            justify-content: center;
+        }
+        &__footer-end {
+            flex: 1 1 100%;
+            justify-content: center;
+        }
+    }
+}
+
+.fega-dt-cell--mono {
+    font-family: var(--fega-dt-mono);
+    font-variant-numeric: tabular-nums;
+    font-size: 0.8125rem;
+    letter-spacing: -0.01em;
+}
+
+.fega-dt-menu {
+    &__header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 6px 6px 12px;
+        border-bottom: thin solid rgba(var(--v-border-color), var(--v-border-opacity));
+        background: rgb(var(--v-theme-grey100));
+    }
+    &__title {
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: rgba(var(--v-theme-on-surface), var(--v-high-emphasis-opacity));
+    }
+
+    &__body {
+        padding: 4px;
+        max-height: min(70vh, 640px);
+        overflow-y: auto;
+    }
+}
+.fega-dt-columns {
+    width: 264px;
+}
+.fega-dt-filters {
+    width: 340px;
+    .fega-dt-menu__body {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        padding: 12px;
+    }
+}
+
+.fega-dt-toggle-btn.v-btn {
+    height: 42px !important;
+    border-color: rgb(var(--v-theme-inputBorder)) !important;
+
+    &:hover,
+    &:focus-visible {
+        border-color: rgb(var(--v-theme-primary)) !important;
+    }
+}
+
+.fega-dt-primary-btn.v-btn {
+    height: 42px !important;
+}
+
+.fega-dt-menu-list.v-list {
+    padding: 4px;
+
+    .v-list-item {
+        min-height: 32px !important;
+        padding-inline: 8px !important;
+        border-radius: 4px;
+    }
+    .v-list-item__spacer {
+        width: 8px !important;
+    }
+    .v-list-item-title {
+        font-size: 0.875rem;
+    }
+}
+
+.fega-dt-col {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    height: 32px;
+    padding-inline: 4px;
+    border-radius: 4px;
+
+    &:hover {
+        background: rgb(var(--v-theme-hoverColor));
+    }
+    &--child {
+        height: 30px;
+        padding-inline-start: 30px;
+    }
+    &__handle {
+        cursor: grab;
+        flex: 0 0 auto;
+        color: rgba(var(--v-theme-on-surface), var(--v-disabled-opacity));
+    }
+    &__label {
+        font-size: 0.875rem;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    &--fixed &__handle {
+        visibility: hidden;
+        cursor: default;
+    }
+    &--ghost {
+        opacity: 0.5;
+        background: rgb(var(--v-theme-lightprimary));
+    }
+    &--drag {
+        background: rgb(var(--v-theme-surface));
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+    }
+    .v-selection-control {
+        flex: 0 0 auto;
+    }
+}

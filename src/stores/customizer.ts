@@ -1,14 +1,24 @@
 import { defineStore } from "pinia";
 import config from '@/config'
 
+const DARK_THEME = 'DARK_AQUA_THEME'
+
+function getDefaultTheme(): string {
+  const prefersDark = window.matchMedia?.('(prefers-color-scheme: dark)').matches
+  return prefersDark ? DARK_THEME : config.actTheme
+}
 
 export const useCustomizerStore = defineStore("customizer",{
+  persist: {
+    storage: localStorage,
+    paths: ['actTheme', 'mini_sidebar']
+  },
   state: () => ({
     Sidebar_drawer: config.Sidebar_drawer,
     Customizer_drawer: config.Customizer_drawer,
     mini_sidebar: config.mini_sidebar,
     setHorizontalLayout: config.setHorizontalLayout, // Horizontal layout
-    actTheme: config.actTheme,
+    actTheme: getDefaultTheme(),
     boxed: config.boxed,
     setBorderCard: config.setBorderCard
   }),

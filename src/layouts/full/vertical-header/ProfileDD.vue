@@ -1,8 +1,10 @@
 <script setup>
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { mapState } from 'pinia'
 import { useAuthStore } from '@/stores/auth.ts'
 const store = useAuthStore()
+
+const menuOpen = ref(false)
 
 const userRoles = computed(() => {
   const roles = store.user.roles.filter(r => r !== 'default-roles-fega_test' && r !== 'uma_authorization' && r !== 'offline_access');
@@ -14,7 +16,7 @@ const userRoles = computed(() => {
   <!-- ---------------------------------------------- -->
   <!-- notifications DD -->
   <!-- ---------------------------------------------- -->
-  <v-menu :close-on-content-click="false">
+  <v-menu v-model="menuOpen" :close-on-content-click="false">
     <template v-slot:activator="{ props }">
       <v-btn class="custom-hover-primary" variant="text" v-bind="props" icon>
         <v-avatar size="35">
@@ -61,10 +63,14 @@ const userRoles = computed(() => {
               </div>
               <p
                 class="text-subtitle-1 font-weight-regular textSecondary"
-                v-html="userRoles.join('<br />')"
-              ></p>
+                style="white-space: pre-line"
+              >{{ userRoles.join('\n') }}</p>
             </v-list-item>
-            <v-list-item class="py-4 px-8 custom-text-primary">
+            <v-list-item
+              class="py-4 px-8 custom-text-primary"
+              :to="'/keys'"
+              @click="menuOpen = false"
+            >
               <template v-slot:prepend>
                 <v-avatar
                   size="48"

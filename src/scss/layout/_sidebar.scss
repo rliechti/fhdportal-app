@@ -3,6 +3,11 @@
     box-shadow: none !important;
     border-right: 1px solid rgb(var(--v-theme-borderColor));
 
+    .v-navigation-drawer__content {
+        display: flex;
+        flex-direction: column;
+    }
+
     .logo {
         padding-left: 7px;
     }
@@ -21,13 +26,8 @@
 
 /*This is for the Vertical sidebar*/
 .scrollnavbar {
-    height: calc(100vh - 190px);
-
-    .userbottom {
-        position: fixed;
-        bottom: 0px;
-        width: 100%;
-    }
+    flex: 1 1 auto;
+    min-height: 0;
 
     .smallCap {
         padding: 3px 0px !important;
@@ -135,10 +135,6 @@
             opacity: 0;
         }
 
-        .userbottom .hide-menu{
-            opacity:0;
-        }
-
         .mini-text {
             display: none;
         }
@@ -175,9 +171,6 @@
                 opacity: 1;
             }
             .sidebarchip.hide-menu{
-                opacity: 1;
-            }
-            .userbottom .hide-menu{
                 opacity: 1;
             }
         }
